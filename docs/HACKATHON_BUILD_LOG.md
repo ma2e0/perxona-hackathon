@@ -15,3 +15,8 @@ Food Spirit was implemented during the Perxona Tokyo Hackathon on August 8,
   retry-in-Chrome message
 - JavaScript syntax, Vercel configuration, local routes, and credential leak
   audit passed before the first commit
+- Protected Vercel preview recognized the sample banana at 96%, produced the
+  four-day estimate, and retained the saved pantry item after reload
+- Vercel production alias returns 503 for shared Perxona token issuance; the
+  revocable judge preview keeps the full integration enabled
+- Hosted Perxona presenter was aligned with the account's Asia API region

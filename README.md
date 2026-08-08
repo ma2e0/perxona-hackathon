@@ -84,3 +84,6 @@ window after confirming the account's usage limits.
 ## Preparation notes
 
 See [`docs/HACKATHON_PREPARATION.md`](docs/HACKATHON_PREPARATION.md) for the scoped build plan and mentor questions.
+
+The concise pitch, two-minute demo script, and judge Q&A are in
+[`docs/JUDGE_SUBMISSION.md`](docs/JUDGE_SUBMISSION.md).
