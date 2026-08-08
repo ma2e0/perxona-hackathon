@@ -8,6 +8,8 @@ const USE_MOCK = process.env.USE_MOCK === "true";
 const IS_VERCEL_PRODUCTION = process.env.VERCEL_ENV === "production";
 const PUBLIC_DEMO_ENABLED =
   process.env.PERXONA_PUBLIC_DEMO_ENABLED === "true";
+const PUBLIC_DEMO_EXPLICITLY_DISABLED =
+  process.env.PERXONA_PUBLIC_DEMO_ENABLED === "false";
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
   "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js";
@@ -426,7 +428,7 @@ app.use(express.json());
 const PRODUCTION_API_ALLOWLIST = new Set(["/health", "/config"]);
 app.use("/api", (req, res, next) => {
   if (
-    !IS_VERCEL_PRODUCTION ||
+    (!IS_VERCEL_PRODUCTION && !PUBLIC_DEMO_EXPLICITLY_DISABLED) ||
     PUBLIC_DEMO_ENABLED ||
     PRODUCTION_API_ALLOWLIST.has(req.path)
   ) {
