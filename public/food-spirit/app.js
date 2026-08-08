@@ -161,9 +161,53 @@ const FOOD_RESCUE_IDEAS = {
   food: "a simple soup, stir-fry, or freezer-ready meal",
 };
 
+const AVATAR_CASTS = {
+  emojiboy: {
+    label: "EmojiBoy",
+    fragments: ["emojiboy_funday", "emojiboy"],
+  },
+  mushroom: {
+    label: "Mushroom",
+    fragments: ["xrspace_mushroom", "mushroom"],
+  },
+  meeks: {
+    label: "Meeks",
+    fragments: ["cc051_meeks", "meeks"],
+  },
+};
+
+const PROFILE_AVATAR_CAST = {
+  banana: "emojiboy",
+  apple: "meeks",
+  citrus: "emojiboy",
+  berries: "emojiboy",
+  tomato: "emojiboy",
+  leafy: "mushroom",
+  carrot: "emojiboy",
+  broccoli: "mushroom",
+  mushroom: "mushroom",
+  bread: "meeks",
+  cheese: "meeks",
+  milk: "meeks",
+  egg: "meeks",
+  meal: "emojiboy",
+  food: "meeks",
+};
+
+const WELCOME_SCRIPT =
+  "Hi, welcome to Food Spirit. Take a photo of food, check what I discover, then tap Awaken. Your food will receive an expressive voice, a use-by plan, and a place in your living pantry. Let's meet the spirit in your kitchen.";
+
 const els = {
   connectionPill: document.querySelector("#connection-pill"),
   connectionLabel: document.querySelector("#connection-label"),
+  navExperience: document.querySelector("#nav-experience"),
+  welcomeScreen: document.querySelector("#welcome"),
+  welcomeStart: document.querySelector("#welcome-start"),
+  welcomeSkip: document.querySelector("#welcome-skip"),
+  welcomePresenter: document.querySelector("#welcome-presenter"),
+  welcomePlaceholder: document.querySelector("#welcome-placeholder"),
+  welcomeStatus: document.querySelector("#welcome-status"),
+  experiencePage: document.querySelector("#experience-page"),
   fileInput: document.querySelector("#food-photo"),
   uploadZone: document.querySelector("#upload-zone"),
   photoPreview: document.querySelector("#photo-preview"),
@@ -178,6 +222,7 @@ const els = {
   analysisStatus: document.querySelector("#analysis-status"),
   analysisCard: document.querySelector("#analysis-card"),
   spiritName: document.querySelector("#spirit-name"),
+  avatarCastBadge: document.querySelector("#avatar-cast-badge"),
   confidenceBadge: document.querySelector("#confidence-badge"),
   foodName: document.querySelector("#food-name"),
   condition: document.querySelector("#condition-select"),
@@ -195,7 +240,8 @@ const els = {
   speechLabel: document.querySelector("#speech-label"),
   speechText: document.querySelector("#speech-text"),
   replayButton: document.querySelector("#replay-button"),
-  saveButton: document.querySelector("#save-button"),
+  autoSaveState: document.querySelector("#auto-save-state"),
+  autoSaveLabel: document.querySelector("#auto-save-label"),
   conversationTitle: document.querySelector("#conversation-title"),
   conversationLog: document.querySelector("#conversation-log"),
   conversationForm: document.querySelector("#conversation-form"),
@@ -214,6 +260,7 @@ const state = {
   previewUrl: "",
   photoDataUrl: "",
   model: null,
+  modelPromise: null,
   profileKey: "food",
   confidence: 0,
   estimatedDays: 3,
@@ -221,6 +268,16 @@ const state = {
   presenterReady: false,
   presenterInitialized: false,
   presenterInitializationPromise: null,
+  presenterTargetKey: null,
+  avatarCatalog: [],
+  avatarCastKey: "meeks",
+  welcomeAvatar: null,
+  welcomeVoice: null,
+  welcomePresenterReady: false,
+  welcomePresenterInitialized: false,
+  welcomePresenterInitializationPromise: null,
+  welcomeTransitionTimer: null,
+  welcomeStarted: false,
   isRefreshingToken: false,
   performanceText: "",
   displayText: "",
@@ -234,6 +291,9 @@ const state = {
   chatHistory: [],
   isAnalyzing: false,
   analysisRunId: 0,
+  captureId: null,
+  pendingAutoSave: false,
+  autoSaveTimer: null,
   chatSheetCollapsed: false,
   isReplying: false,
   recognition: null,
@@ -288,6 +348,51 @@ function selectByName(items, fragments) {
   );
 }
 
+function castForProfile(profileKey) {
+  const castKey = PROFILE_AVATAR_CAST[profileKey] ?? "meeks";
+  return { castKey, ...AVATAR_CASTS[castKey] };
+}
+
+async function loadMotionForAvatar(avatar) {
+  if (!avatar) return;
+  const avatarId = avatar.id;
+  try {
+    const motions = await request(
+      `/api/avatars/${encodeURIComponent(avatarId)}/motions`,
+    );
+    if (state.avatar?.id !== avatarId) return;
+    state.motion = selectByName(motions.items, [
+      "lively",
+      "greeting",
+      "talk",
+      "extend",
+      "laugh",
+      "lean",
+    ]);
+    createPerformance();
+  } catch {
+    if (state.avatar?.id === avatarId) state.motion = null;
+  }
+}
+
+function castAvatarForProfile(profileKey) {
+  const cast = castForProfile(profileKey);
+  state.avatarCastKey = cast.castKey;
+  els.avatarCastBadge.textContent = `Cast: ${cast.label}`;
+  if (state.avatarCatalog.length === 0) return;
+
+  const nextAvatar = selectByName(state.avatarCatalog, cast.fragments);
+  if (!nextAvatar || state.avatar?.id === nextAvatar.id) return;
+
+  state.avatar = nextAvatar;
+  state.motion = null;
+  state.presenterReady = false;
+  state.presenterInitialized = false;
+  state.presenterInitializationPromise = null;
+  state.presenterTargetKey = null;
+  void loadMotionForAvatar(nextAvatar);
+}
+
 async function preparePerxona() {
   try {
     const config = await request("/api/config");
@@ -302,22 +407,32 @@ async function preparePerxona() {
       request("/api/voices"),
     ]);
 
-    state.avatar = selectByName(avatars.items, ["female_food", "mushroom"]);
+    state.avatarCatalog = avatars.items;
+    state.welcomeAvatar = selectByName(avatars.items, ["female_vrm09"]);
+    castAvatarForProfile(state.profileKey);
     state.scene = selectByName(scenes.items, ["food_advisor", "food"]);
     state.voices = voices.items;
     state.voice = selectByName(voices.items, ["warm and cheerful", "brightly casual"]);
+    state.welcomeVoice = selectByName(voices.items, [
+      "brightly casual",
+      "warm and cheerful",
+    ]);
 
-    if (!state.avatar || !state.scene || !state.voice) {
+    if (
+      !state.avatar ||
+      !state.welcomeAvatar ||
+      !state.scene ||
+      !state.voice ||
+      !state.welcomeVoice
+    ) {
       throw new Error("The account is missing a required avatar, scene, or voice.");
     }
 
-    const motions = await request(
-      `/api/avatars/${encodeURIComponent(state.avatar.id)}/motions`,
-    );
-    state.motion = selectByName(motions.items, ["lively", "extend", "lean"]);
-
     els.connectionPill.dataset.state = "ready";
     els.connectionLabel.textContent = "Perxona ready";
+    void initializeWelcomePresenter().catch((error) => {
+      els.welcomeStatus.textContent = error.message;
+    });
   } catch (error) {
     els.connectionPill.dataset.state = "error";
     els.connectionLabel.textContent = "Perxona needs attention";
@@ -351,13 +466,22 @@ function profileForPredictions(predictions) {
 
 async function ensureRecognitionModel() {
   if (state.model) return state.model;
+  if (state.modelPromise) return state.modelPromise;
   if (!window.mobilenet) {
     throw new Error("On-device recognition is still loading. Try again shortly.");
   }
-  // The compact model returns candidates quickly; Perxona then performs the
-  // semantic label refinement instead of making the user wait for a larger model.
-  state.model = await window.mobilenet.load({ version: 2, alpha: 0.5 });
-  return state.model;
+  // The welcome screen gives us time to preload the full-width MobileNet V2.
+  // It has more capacity than the compact alpha 0.5 build while staying local.
+  state.modelPromise = window.mobilenet
+    .load({ version: 2, alpha: 1.0 })
+    .then((model) => {
+      state.model = model;
+      return model;
+    })
+    .finally(() => {
+      state.modelPromise = null;
+    });
+  return state.modelPromise;
 }
 
 function formatDate(date) {
@@ -373,6 +497,7 @@ function updateEstimate() {
   if (typedKey !== "food" || state.profileKey === "food") {
     state.profileKey = typedKey;
   }
+  castAvatarForProfile(state.profileKey);
   const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
   if (!state.presenterInitialized && state.voices.length > 0) {
     state.voice = selectByName(state.voices, [profile.voice]);
@@ -575,9 +700,9 @@ async function analyzePhoto() {
   setRecognitionProgress({
     active: true,
     title: "Reading your photo",
-    detail: "Private on-device vision is finding the strongest food matches.",
+    detail: "Full-width MobileNet V2 is finding the strongest local matches.",
   });
-  els.analysisStatus.textContent = "Loading private on-device recognition…";
+  els.analysisStatus.textContent = "Loading full-width on-device recognition…";
 
   try {
     const model = await ensureRecognitionModel();
@@ -631,26 +756,120 @@ async function analyzePhoto() {
     setRecognitionProgress({
       active: false,
       title: "Reading your photo",
-      detail: "Private on-device vision is finding the strongest food matches.",
+      detail: "Full-width MobileNet V2 is finding the strongest local matches.",
     });
   }
 }
 
+function enterExperience() {
+  if (!els.experiencePage.hidden) return;
+  window.clearTimeout(state.welcomeTransitionTimer);
+  state.welcomeTransitionTimer = null;
+  els.welcomePresenter.interruptPresentation?.();
+  els.welcomeScreen.classList.add("is-leaving");
+
+  window.setTimeout(() => {
+    els.welcomePresenter.remove();
+    els.welcomeScreen.hidden = true;
+    els.experiencePage.hidden = false;
+    document.body.classList.remove("landing-open");
+    document.body.classList.add("experience-open");
+    window.scrollTo({ top: 0, behavior: "auto" });
+    els.welcomeScreen.classList.remove("is-leaving");
+    els.fileInput.focus({ preventScroll: true });
+  }, 420);
+}
+
+function waitForWelcomePresenterReady(timeoutMs = 30000) {
+  if (state.welcomePresenterReady) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      els.welcomePresenter.removeEventListener("PRESENTER_STATUS", handleStatus);
+      reject(new Error("The welcome avatar is taking too long to load."));
+    }, timeoutMs);
+
+    function handleStatus(event) {
+      const status = event.detail?.status ?? event.detail;
+      if (status !== "Ready") return;
+      window.clearTimeout(timeout);
+      els.welcomePresenter.removeEventListener("PRESENTER_STATUS", handleStatus);
+      resolve();
+    }
+
+    els.welcomePresenter.addEventListener("PRESENTER_STATUS", handleStatus);
+  });
+}
+
+async function initializeWelcomePresenter() {
+  if (state.welcomePresenterInitialized && state.welcomePresenterReady) return;
+  if (!state.welcomeAvatar || !state.scene || !state.welcomeVoice) {
+    throw new Error("The welcome guide is still preparing.");
+  }
+  if (!state.welcomePresenterInitializationPromise) {
+    state.welcomePresenterInitializationPromise = (async () => {
+      const { connect_token: token } = await request("/api/connect-token");
+      const ready = waitForWelcomePresenterReady();
+      await els.welcomePresenter.initialize(token, {
+        avatarId: state.welcomeAvatar.id,
+        sceneId: state.scene.id,
+        voiceId: state.welcomeVoice.id,
+      });
+      state.welcomePresenterInitialized = true;
+      await ready;
+    })().finally(() => {
+      state.welcomePresenterInitializationPromise = null;
+    });
+  }
+  await state.welcomePresenterInitializationPromise;
+}
+
+async function playWelcome() {
+  if (state.welcomeStarted) return;
+  state.welcomeStarted = true;
+  els.welcomeStart.disabled = true;
+  els.welcomeStatus.textContent = "Airi is about to show you how Food Spirit works…";
+  try {
+    await els.welcomePresenter.resumeAudioPlayback?.();
+    await initializeWelcomePresenter();
+    const result = await els.welcomePresenter.present(WELCOME_SCRIPT);
+    if (!result?.success) {
+      throw new Error(result?.message || result?.code || "Welcome performance failed.");
+    }
+    els.welcomeStatus.textContent = "Listen to Airi, then the camera experience will open.";
+    els.welcomeStart.querySelector("span").textContent = "✦";
+    els.welcomeStart.firstChild.textContent = " Welcome in progress ";
+    state.welcomeTransitionTimer = window.setTimeout(enterExperience, 18000);
+  } catch (error) {
+    els.welcomeStatus.textContent = `${error.message} Opening the experience instead.`;
+    window.setTimeout(enterExperience, 900);
+  }
+}
+
 async function initializePresenter() {
-  if (state.presenterInitialized && state.presenterReady) return;
   if (!state.avatar || !state.scene || !state.voice) {
     throw new Error("Perxona assets are not ready yet.");
+  }
+  const targetKey = `${state.avatar.id}:${state.scene.id}:${state.voice.id}`;
+  if (
+    state.presenterInitialized &&
+    state.presenterReady &&
+    state.presenterTargetKey === targetKey
+  ) {
+    return;
   }
   if (!state.presenterInitializationPromise) {
     state.presenterInitializationPromise = (async () => {
       const { connect_token: token } = await request("/api/connect-token");
+      state.presenterReady = false;
+      const ready = waitForPresenterReady();
       await els.presenter.initialize(token, {
         avatarId: state.avatar.id,
         sceneId: state.scene.id,
         voiceId: state.voice.id,
       });
       state.presenterInitialized = true;
-      await waitForPresenterReady();
+      state.presenterTargetKey = targetKey;
+      await ready;
     })().finally(() => {
       state.presenterInitializationPromise = null;
     });
@@ -683,11 +902,21 @@ function waitForPresenterReady(timeoutMs = 30000) {
   });
 }
 
-async function presentSpirit() {
+async function presentSpirit({ autoSave = false } = {}) {
   createPerformance();
+  if (autoSave) {
+    state.pendingAutoSave = true;
+    window.clearTimeout(state.autoSaveTimer);
+    els.autoSaveState.classList.add("is-saving");
+    els.autoSaveLabel.textContent = "Saving after the first hello…";
+  }
   const result = await els.presenter.present(state.performanceText);
   if (!result?.success) {
+    if (autoSave) state.pendingAutoSave = false;
     throw new Error(result?.message || result?.code || "Presentation failed.");
+  }
+  if (autoSave) {
+    state.autoSaveTimer = window.setTimeout(completeAutoSave, 18000);
   }
   els.speechCard.hidden = false;
   setChatSheetCollapsed(false);
@@ -702,8 +931,12 @@ async function awakenSpirit() {
   try {
     await els.presenter.resumeAudioPlayback?.();
     await initializePresenter();
-    await presentSpirit();
+    await presentSpirit({ autoSave: true });
   } catch (error) {
+    state.pendingAutoSave = false;
+    window.clearTimeout(state.autoSaveTimer);
+    els.autoSaveState.classList.remove("is-saving");
+    els.autoSaveLabel.textContent = "Auto-saves after the first hello";
     els.presenterStatus.textContent = error.message;
     els.awakenButton.disabled = false;
   }
@@ -1081,7 +1314,8 @@ function renderInventory() {
     const name = document.createElement("strong");
     name.textContent = `${item.spirit} · ${item.food}`;
     const date = document.createElement("span");
-    date.textContent = `Use by ${item.useBy} · ${item.storage}`;
+    const performer = item.performer ? ` · cast as ${item.performer}` : "";
+    date.textContent = `Use by ${item.useBy} · ${item.storage}${performer}`;
     copy.append(name, date);
 
     const remove = document.createElement("button");
@@ -1101,11 +1335,18 @@ function renderInventory() {
 }
 
 function saveCurrentItem() {
+  if (!state.captureId || !state.photoDataUrl) return;
   const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  const existingIndex = state.inventory.findIndex(
+    (entry) => entry.captureId === state.captureId,
+  );
+  const existing = existingIndex >= 0 ? state.inventory[existingIndex] : null;
   const item = {
-    id: crypto.randomUUID(),
+    id: existing?.id ?? crypto.randomUUID(),
+    captureId: state.captureId,
     food: els.foodName.value.trim() || profile.label,
     spirit: profile.spirit,
+    performer: AVATAR_CASTS[state.avatarCastKey]?.label ?? "Meeks",
     storage: STORAGE_LABELS[els.storage.value],
     condition:
       els.condition.options[els.condition.selectedIndex]?.textContent ??
@@ -1114,14 +1355,24 @@ function saveCurrentItem() {
     useBy: formatDate(state.estimatedDate),
     photo: state.photoDataUrl,
   };
+  if (existingIndex >= 0) {
+    state.inventory.splice(existingIndex, 1);
+  }
   state.inventory.unshift(item);
   state.inventory = state.inventory.slice(0, 9);
   persistInventory();
   renderInventory();
-  els.saveButton.textContent = "Saved on this device";
-  setTimeout(() => {
-    els.saveButton.textContent = "Save on this device";
-  }, 1800);
+}
+
+function completeAutoSave() {
+  if (!state.pendingAutoSave) return;
+  state.pendingAutoSave = false;
+  window.clearTimeout(state.autoSaveTimer);
+  state.autoSaveTimer = null;
+  saveCurrentItem();
+  els.autoSaveState.classList.remove("is-saving");
+  els.autoSaveState.classList.add("is-saved");
+  els.autoSaveLabel.textContent = "Saved automatically on this device";
 }
 
 function fileToDataUrl(file) {
@@ -1156,6 +1407,12 @@ async function createStoredPhoto(image, file) {
 async function loadPhoto(file, statusMessage) {
   state.analysisRunId += 1;
   state.isAnalyzing = false;
+  state.captureId = crypto.randomUUID();
+  state.pendingAutoSave = false;
+  window.clearTimeout(state.autoSaveTimer);
+  state.autoSaveTimer = null;
+  els.autoSaveState.classList.remove("is-saving", "is-saved");
+  els.autoSaveLabel.textContent = "Auto-saves after the first hello";
   els.analyzeButton.hidden = true;
   els.aiRefinementPill.hidden = true;
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
@@ -1172,6 +1429,7 @@ async function loadPhoto(file, statusMessage) {
   state.presenterInitialized = false;
   state.presenterReady = false;
   state.presenterInitializationPromise = null;
+  state.presenterTargetKey = null;
   els.presenter.hidden = true;
   els.stagePlaceholder.hidden = false;
   els.presenterStatus.textContent = "Waiting to awaken this photo";
@@ -1216,6 +1474,9 @@ els.foodName.addEventListener("input", () => {
   updateEstimate();
   createPerformance();
 });
+els.navExperience.addEventListener("click", enterExperience);
+els.welcomeSkip.addEventListener("click", enterExperience);
+els.welcomeStart.addEventListener("click", playWelcome);
 els.awakenButton.addEventListener("click", awakenSpirit);
 els.replayButton.addEventListener("click", async () => {
   try {
@@ -1225,7 +1486,6 @@ els.replayButton.addEventListener("click", async () => {
     els.presenterStatus.textContent = error.message;
   }
 });
-els.saveButton.addEventListener("click", saveCurrentItem);
 els.conversationForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void askFoodSpirit(els.conversationInput.value);
@@ -1271,6 +1531,26 @@ els.presenter.addEventListener("PRESENTER_STATUS", (event) => {
   }
 });
 
+els.presenter.addEventListener("ALL_PERFORMANCE_FINISHED", completeAutoSave);
+
+els.welcomePresenter.addEventListener("PRESENTER_STATUS", (event) => {
+  const status = event.detail?.status ?? event.detail;
+  if (status !== "Ready") {
+    els.welcomeStatus.textContent =
+      status === "Initializing" ? "Preparing Airi's live welcome…" : String(status);
+    return;
+  }
+  state.welcomePresenterReady = true;
+  state.welcomePresenterInitialized = true;
+  els.welcomePresenter.hidden = false;
+  els.welcomePlaceholder.hidden = true;
+  els.welcomeStatus.textContent = "Airi is ready. Tap Hear the welcome to begin.";
+});
+
+els.welcomePresenter.addEventListener("ALL_PERFORMANCE_FINISHED", () => {
+  if (state.welcomeStarted) enterExperience();
+});
+
 els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
   if (state.isRefreshingToken) return;
   state.isRefreshingToken = true;
@@ -1282,6 +1562,15 @@ els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
     els.presenterStatus.textContent = error.message;
   } finally {
     state.isRefreshingToken = false;
+  }
+});
+
+els.welcomePresenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
+  try {
+    const { connect_token: token } = await request("/api/connect-token");
+    els.welcomePresenter.refreshConnectToken(token);
+  } catch (error) {
+    els.welcomeStatus.textContent = error.message;
   }
 });
 

@@ -12,9 +12,9 @@ storage, and the app estimates a useful-by date. Perxona then gives that food a
 voice, expression, scene, and motion so the reminder feels like a relationship,
 not another inventory notification.
 
-The item can be saved privately in the browser. No account or cloud pantry is
-required, and the estimate is clearly presented as planning guidance rather
-than a food-safety verdict.
+After its first hello, the item is saved automatically in the browser. No account
+or cloud pantry is required, and the estimate is clearly presented as planning
+guidance rather than a food-safety verdict.
 
 ## Why Perxona is essential
 
@@ -26,22 +26,29 @@ forgotten. The avatar is the behavioral interface, not a decorative result.
 ## Verified MVP
 
 - smartphone camera and photo-library input
-- automatic on-device MobileNet recognition, Perxona AI label refinement, and
-  manual correction
+- automatic full-width MobileNet V2 recognition, Perxona AI label refinement,
+  and manual correction
 - condition- and storage-aware useful-by estimate
+- intelligent casting across EmojiBoy, Mushroom, and Meeks based on food type
+- separate Female VRM 09 welcome performance
 - live Perxona avatar, scene, voice, expression, and compatible motion
 - first-person Food Spirit performance and replay
 - multi-turn Perxona chatbot conversation by text or push-to-talk voice, using
   the foods actually saved in the device pantry
-- browser-only pantry with photo thumbnail and removal control
-- graceful transcript and save fallback if the 3D engine is unavailable
+- automatic browser-only pantry save after the first performance, with photo
+  thumbnail and removal control
+- graceful transcript fallback if the 3D engine is unavailable; automatic save
+  follows the first successful performance
 
 ## Two-minute demo script
 
-### 0:00–0:15 — Hook
+### 0:00–0:15 — Welcome and hook
 
-“Most food waste does not happen because people do not care. It happens because
-food becomes invisible. Food Spirit gives it a voice before it is forgotten.”
+Tap **Hear the welcome**. Female VRM 09 briefly explains the three steps, then
+the separate camera experience opens.
+
+“The first avatar is our guide. Every avatar after this belongs to food that
+might otherwise become invisible.”
 
 ### 0:15–0:40 — Discover
 
@@ -67,6 +74,9 @@ Select **Awaken this Food Spirit**.
 voice, facial expression, lip-sync, and motion. The reminder is no longer ‘item
 expires in four days’; it is a character asking not to be forgotten.”
 
+Point to **Cast: EmojiBoy**. “Food Spirit did not fake a generated 3D model. It
+intelligently cast the best expressive non-human performer available.”
+
 Tap **Talk**, ask “What can I make with you tonight?”, then tap **Done**.
 
 “The microphone becomes text, the Perxona chatbot receives the banana's current
@@ -76,8 +86,8 @@ recognition is unavailable.”
 
 ### 1:40–1:55 — Private memory
 
-Select **Save on this device**, then reload and show that the pantry
-item remains.
+After the first hello finishes, show the automatic saved state, then reload and
+show that the pantry item remains.
 
 “The pantry stays on this device. The user can remove it at any time.”
 
@@ -96,9 +106,10 @@ casts each food through an existing expressive Perxona performer so expression,
 voice, and motion remain reliable.
 
 **Where does the food information come from?**  
-The visual label comes from MobileNet running in the browser. The useful-by
-estimate comes from transparent food, condition, and storage rules and can be
-corrected by the user. It is not a food-safety diagnosis.
+The visual candidates come from full-width MobileNet V2 (`alpha: 1.0`) running
+in the browser, then a dedicated Perxona chatbot normalizes the candidate label.
+The useful-by estimate comes from transparent food, condition, and storage rules
+and can be corrected by the user. It is not a food-safety diagnosis.
 
 **Where is the pantry stored?**  
 In browser local storage on the device. No server account is needed for the
@@ -112,8 +123,9 @@ browser vendor's speech service. The full pantry record and photo thumbnails
 remain in browser local storage.
 
 **Can it support many food characters?**  
-Yes. The app can map foods to different Perxona avatar, scene, voice, and motion
-profiles while keeping one active presenter at a time for reliable performance.
+Yes. Bright foods cast EmojiBoy, earthy greens cast Mushroom, and comfort,
+dairy, and unknown foods cast Meeks. The landing guide uses Female VRM 09. The
+app keeps one active food presenter at a time for reliable performance.
 
 ## Links to provide in the submission form
 

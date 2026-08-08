@@ -35,3 +35,12 @@ Food Spirit was implemented during the Perxona Tokyo Hackathon on August 8,
   ingredients in recipe answers, and prioritizes the shortest use window
 - The live stage uses a phone-shaped avatar display beside chat on desktop and a
   touch-drag, collapsible bottom conversation sheet on mobile
+- Recognition now preloads the full-width MobileNet V2 model (`alpha: 1.0`)
+  during a separate full-screen welcome experience
+- Female VRM 09 performs the optional spoken welcome before the camera flow
+- Food profiles now cast one of three available non-human performers: EmojiBoy,
+  Mushroom, or Meeks; the result names the selected performer before awakening
+- The first successful avatar performance auto-saves the food to the device,
+  with capture-level duplicate protection for replay and chat
+- The desktop avatar stage now uses a premium iPhone Pro-style shell; mobile
+  removes captions and chrome to maximize the live avatar behind the swipe sheet
