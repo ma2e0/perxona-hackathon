@@ -33,15 +33,17 @@
     ></script>
     <script type="module" src="./app.js"></script>
   </head>
-  <body>
+  <body class="landing-open">
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#welcome" aria-label="Food Spirit home">
+        <a class="brand" href="./" aria-label="Food Spirit home">
           <span class="brand-mark" aria-hidden="true">芽</span>
           <span>Food Spirit</span>
         </a>
         <div class="topbar-actions">
-          <a class="nav-cta" href="#experience">Try the experience</a>
+          <button class="nav-cta" id="nav-experience" type="button">
+            Try the experience
+          </button>
           <div class="connection-pill" id="connection-pill" data-state="loading">
             <span class="connection-dot" aria-hidden="true"></span>
             <span id="connection-label">Connecting to Perxona</span>
@@ -67,6 +69,23 @@
               <span aria-hidden="true"></span>
               Perxona Tokyo Hackathon
             </span>
+
+            <div class="welcome-avatar-card" aria-label="Welcome guide">
+              <div class="welcome-avatar-topline">
+                <span><i aria-hidden="true"></i> Live welcome</span>
+                <strong>Female VRM 09</strong>
+              </div>
+              <div class="welcome-presenter-frame">
+                <sv-presenter id="welcome-presenter" hidden></sv-presenter>
+                <div class="welcome-placeholder" id="welcome-placeholder">
+                  <span class="welcome-orbit" aria-hidden="true">✦</span>
+                  <strong>Airi is getting ready</strong>
+                </div>
+              </div>
+              <p id="welcome-status" role="status">
+                Your Food Spirit guide is preparing a short hello.
+              </p>
+            </div>
           </div>
           <div class="landing-actionbar">
             <div>
@@ -77,10 +96,15 @@
                 be used and talks through Perxona.
               </p>
             </div>
-            <a class="landing-cta" href="#experience">
-              Awaken a Food Spirit
-              <span aria-hidden="true">↓</span>
-            </a>
+            <div class="landing-cta-group">
+              <button class="landing-cta" id="welcome-start" type="button">
+                Hear the welcome
+                <span aria-hidden="true">→</span>
+              </button>
+              <button class="landing-skip" id="welcome-skip" type="button">
+                Skip intro · take a photo
+              </button>
+            </div>
           </div>
           <div class="landing-steps" aria-label="How Food Spirit works">
             <span><strong>01</strong> Take a photo</span>
@@ -89,11 +113,12 @@
           </div>
         </section>
 
-        <section
-          class="hero-grid"
-          id="experience"
-          aria-labelledby="page-title"
-        >
+        <div class="experience-page" id="experience-page" hidden>
+          <section
+            class="hero-grid"
+            id="experience"
+            aria-labelledby="page-title"
+          >
           <article class="capture-panel">
             <p class="eyebrow">Live experience</p>
             <h1 id="page-title">Meet the voice inside your kitchen.</h1>
@@ -130,7 +155,7 @@
                 <span class="recognition-orb" aria-hidden="true"></span>
                 <strong id="recognition-title">Reading your photo</strong>
                 <small id="recognition-detail">
-                  Private on-device vision is finding the strongest food matches.
+                  Full-width MobileNet V2 is finding the strongest local matches.
                 </small>
               </span>
             </label>
@@ -163,15 +188,20 @@
                   <p class="eyebrow">Spirit discovered</p>
                   <h2 id="spirit-name">Mori</h2>
                 </div>
-                <span class="confidence-badge" id="confidence-badge">Review</span>
+                <div class="result-badges">
+                  <span class="avatar-cast-badge" id="avatar-cast-badge">
+                    Cast: Meeks
+                  </span>
+                  <span class="confidence-badge" id="confidence-badge">Review</span>
+                </div>
               </div>
 
               <label class="field">
                 <span>What food is this?</span>
                 <input id="food-name" type="text" autocomplete="off" />
                 <small>
-                  On-device vision gives the first match; Perxona AI normalizes
-                  the label. You can always correct it.
+                  Full-width MobileNet V2 gives the first match; Perxona AI
+                  normalizes the label. You can always correct it.
                 </small>
               </label>
 
@@ -225,9 +255,15 @@
             </div>
 
             <div class="live-console">
-              <div class="avatar-device" aria-label="Food Spirit mobile avatar display">
-                <div class="device-speaker" aria-hidden="true"></div>
+              <div class="avatar-device" aria-label="Food Spirit premium mobile avatar display">
+                <span class="device-side-button device-action-button" aria-hidden="true"></span>
+                <span class="device-side-button device-volume-up" aria-hidden="true"></span>
+                <span class="device-side-button device-volume-down" aria-hidden="true"></span>
+                <span class="device-side-button device-power-button" aria-hidden="true"></span>
                 <div class="device-screen">
+                  <div class="device-island" aria-hidden="true">
+                    <span class="island-camera"></span>
+                  </div>
                   <div class="device-statusbar" aria-hidden="true">
                     <span>Food Spirit</span>
                     <span>● Live</span>
@@ -238,8 +274,10 @@
                       <div class="spirit-seed" aria-hidden="true">
                         <span>✦</span>
                       </div>
-                      <h2>A voice is waiting inside.</h2>
-                      <p>Your expressive avatar will appear here after recognition.</p>
+                      <h2 class="placeholder-title">A voice is waiting inside.</h2>
+                      <p class="placeholder-copy">
+                        Your expressive avatar will appear here after recognition.
+                      </p>
                     </div>
                   </div>
                   <div class="device-caption">
@@ -280,9 +318,10 @@
                       <button class="secondary-button" id="replay-button">
                         Replay voice
                       </button>
-                      <button class="secondary-button strong" id="save-button">
-                        Save on this device
-                      </button>
+                      <span class="auto-save-state" id="auto-save-state">
+                        <i aria-hidden="true"></i>
+                        <span id="auto-save-label">Auto-saves after the first hello</span>
+                      </span>
                     </div>
                   </div>
 
@@ -357,26 +396,27 @@
               </div>
             </div>
           </aside>
-        </section>
+          </section>
 
-        <section class="inventory-section" aria-labelledby="inventory-title">
-          <div class="inventory-heading">
-            <div>
-              <p class="eyebrow">Your living pantry</p>
-              <h2 id="inventory-title">Food spirits to remember</h2>
+          <section class="inventory-section" aria-labelledby="inventory-title">
+            <div class="inventory-heading">
+              <div>
+                <p class="eyebrow">Your living pantry</p>
+                <h2 id="inventory-title">Food spirits to remember</h2>
+              </div>
+              <span id="inventory-count">0 saved</span>
             </div>
-            <span id="inventory-count">0 saved</span>
-          </div>
-          <div class="inventory-grid" id="inventory-grid"></div>
-          <p class="empty-inventory" id="empty-inventory">
-            Saved spirits will appear here with their use-by estimates.
-          </p>
-        </section>
+            <div class="inventory-grid" id="inventory-grid"></div>
+            <p class="empty-inventory" id="empty-inventory">
+              Spirits are saved automatically after their first hello.
+            </p>
+          </section>
+        </div>
       </main>
 
       <footer>
         <span>Food Spirit prototype</span>
-        <span>On-device recognition · Perxona Connect avatar performance</span>
+        <span>MobileNet V2 recognition · Perxona Connect avatar casting</span>
       </footer>
     </div>
   </body>

@@ -8,7 +8,7 @@ The intended demo flow is:
 2. Identify the food and estimate its condition and useful-by date.
 3. Cast the food as an expressive avatar with a personality, voice, and motion style.
 4. Let the avatar explain what it is, when to use it, and whether to eat, freeze, share, or compost it.
-5. Save the item in a lightweight food inventory.
+5. Auto-save the awakened result in a lightweight device inventory.
 
 ## Working MVP
 
@@ -20,18 +20,21 @@ The MVP now includes:
 
 - smartphone camera and photo upload with automatic recognition—no separate
   discover step
-- immediate on-device MobileNet candidates normalized by a dedicated Perxona
-  Food Vision Refiner, with a manual correction field
+- full-width MobileNet V2 (`alpha: 1.0`) preloaded behind the welcome screen,
+  with candidates normalized by a dedicated Perxona Food Vision Refiner and a
+  manual correction field
 - freshness and use-by estimation based on food, condition, and storage
-- live Perxona avatar, scene, voice, emotion, and compatible motion selection
+- smart food-to-avatar casting across the account's three non-human performers:
+  EmojiBoy, Mushroom, and Meeks
 - a first-person Food Spirit performance with replay
 - multi-turn text chat backed by a dedicated Perxona chatbot that receives the
   device's saved pantry and can combine real saved ingredients into rescue meals
 - tap-to-talk browser speech recognition: tap **Talk**, speak naturally, then
   tap **Done** to send, with automatic recognition-session recovery and text fallback
-- an animated, responsive landing experience built around the Food Spirit artwork
-- a desktop phone-and-chat performance console plus a swipeable mobile chat sheet
-- a local, browser-only pantry inventory with compressed photo thumbnails
+- a separate full-screen landing welcome performed by Female VRM 09
+- a premium iPhone Pro-style desktop stage plus a maximized mobile avatar and
+  swipeable conversation sheet
+- an automatically saved, browser-only pantry with compressed photo thumbnails
 - a clear food-safety disclaimer and explicit compost/share/freeze/use-soon guidance
 
 The first tap on **Awaken this Food Spirit** also unlocks browser audio, so keep that
@@ -42,16 +45,15 @@ Perxona performer.
 ## Current casting logic
 
 Food Spirit loads the live asset catalogs from the connected Perxona account.
-It prefers an avatar whose name contains `female_food` or `mushroom`, and a
-scene whose name contains `food_advisor` or `food`; if no preferred name is
-available, it uses the first compatible catalog item. Each food profile requests
-a matching voice tone, while the selected avatar's motion catalog is searched
-for `lively`, `extend`, or `lean`. The first compatible item is the fallback in
-each case.
+Bright fruit and playful prepared foods cast EmojiBoy; earthy greens, broccoli,
+and mushrooms cast Mushroom; apples, bread, dairy, eggs, and unknown foods cast
+Meeks. Female VRM 09 is reserved for the landing-page guide. The chosen
+performer's compatible motion catalog is loaded before the first performance,
+with a no-custom-motion fallback if the catalog is temporarily unavailable.
 
-The recognized food changes the spirit identity, voice preference, dialogue,
-freshness behavior, and motion. It does not generate a new 3D model from the
-photo. One active performer is deliberately reused for a reliable live demo.
+The recognized food changes the performer, spirit identity, voice preference,
+dialogue, freshness behavior, and motion. It does not generate a new 3D model
+from the photo. Only one food performer is active at a time for reliability.
 
 ## Foundation
 
