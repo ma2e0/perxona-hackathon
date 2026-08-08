@@ -90,7 +90,7 @@ const FOOD_PROFILES = {
   milk: {
     label: "Milk",
     spirit: "Miruku Mellow",
-    keywords: ["milk", "yogurt", "cream"],
+    keywords: ["milk", "yogurt", "cream", "eggnog"],
     days: { counter: 1, fridge: 5, freezer: 30 },
     voice: "steady and approachable",
     opening: "I like the cold, a clean cap, and a little attention.",
@@ -232,6 +232,11 @@ const els = {
   awakenButton: document.querySelector("#awaken-button"),
   presenter: document.querySelector("#presenter"),
   presenterStatus: document.querySelector("#presenter-status"),
+  liveConsole: document.querySelector("#live-console"),
+  avatarCloseButton: document.querySelector("#avatar-close-button"),
+  avatarFridge: document.querySelector("#avatar-fridge"),
+  fridgeFoodGrid: document.querySelector("#fridge-food-grid"),
+  fridgeEmpty: document.querySelector("#fridge-empty"),
   stagePlaceholder: document.querySelector("#stage-placeholder"),
   deviceSpiritName: document.querySelector("#device-spirit-name"),
   speechCard: document.querySelector("#speech-card"),
@@ -259,6 +264,7 @@ const els = {
 const state = {
   previewUrl: "",
   photoDataUrl: "",
+  selectedFileName: "",
   model: null,
   modelPromise: null,
   profileKey: "food",
@@ -655,6 +661,33 @@ function parseRefinedFood(replyText) {
   }
 }
 
+function validateRefinedFood(refined, predictions) {
+  if (!refined) return null;
+  const candidateText = predictions
+    .map((prediction) => prediction.className)
+    .join(" ")
+    .toLowerCase();
+  const filename = state.selectedFileName.toLowerCase();
+  const hasEggEvidence = /\b(egg|eggs|hen|nest)\b/.test(candidateText);
+  const hasMilkEvidence =
+    /\b(milk|dairy|cream|yogurt|eggnog|carton|bottle|jug|pitcher|milk can)\b/.test(
+      candidateText + " " + filename,
+    );
+
+  // Do not let the text refiner invent eggs when the visual model saw none.
+  if (refined.profileKey === "egg" && !hasEggEvidence) {
+    if (hasMilkEvidence) {
+      return {
+        food: "Milk",
+        confidence: Math.max(refined.confidence, 0.72),
+        profileKey: "milk",
+      };
+    }
+    return null;
+  }
+  return refined;
+}
+
 async function refineFoodPredictions(predictions) {
   if (!state.refinerChatbotId) {
     const config = await request("/api/config");
@@ -680,7 +713,7 @@ async function refineFoodPredictions(predictions) {
             parts: [
               {
                 type: "text",
-                text: `On-device candidates: ${candidates}. Return the required JSON.`,
+                text: `On-device candidates: ${candidates}. Uploaded filename: ${state.selectedFileName || "unknown"}. A carton, capped bottle, jug, pitcher, or milk can is more likely milk or another drink. Never answer eggs unless an egg, hen, nest, or egg-shaped food is supported by the candidates. Return the required JSON.`,
               },
             ],
           },
@@ -690,7 +723,7 @@ async function refineFoodPredictions(predictions) {
     },
   );
   if (response.status !== "succeeded") return null;
-  return parseRefinedFood(response.reply_text);
+  return validateRefinedFood(parseRefinedFood(response.reply_text), predictions);
 }
 
 async function analyzePhoto() {
@@ -890,8 +923,7 @@ async function attemptAutomaticWelcome({ fromGesture = false } = {}) {
     disarmWelcomeGesture();
     els.welcomeStatus.textContent = "Airi is welcoming you to Food Spirit.";
     els.welcomeAudioNote.textContent =
-      "The photo experience opens automatically when she finishes.";
-    state.welcomeTransitionTimer = window.setTimeout(enterExperience, 18000);
+      "When she finishes, click Start with a photo when you are ready.";
   } catch (error) {
     if (!fromGesture && isAudioAutoplayBlocked(error)) {
       armWelcomeGesture();
@@ -1001,6 +1033,7 @@ async function awakenSpirit() {
     await els.presenter.resumeAudioPlayback?.();
     await initializePresenter();
     await presentSpirit({ autoSave: true });
+    els.avatarCloseButton.hidden = false;
   } catch (error) {
     state.pendingAutoSave = false;
     window.clearTimeout(state.autoSaveTimer);
@@ -1401,6 +1434,54 @@ function renderInventory() {
     card.append(image, copy, remove);
     els.inventoryGrid.append(card);
   });
+  renderAvatarFridge();
+}
+
+function renderAvatarFridge() {
+  els.fridgeFoodGrid.replaceChildren();
+  els.fridgeEmpty.hidden = state.inventory.length > 0;
+  state.inventory.forEach((item) => {
+    const button = document.createElement("button");
+    button.className = "fridge-food";
+    button.type = "button";
+    button.setAttribute("aria-label", `Awaken ${item.spirit || item.food}`);
+
+    const image = document.createElement("img");
+    image.src = item.photo;
+    image.alt = item.food;
+    const label = document.createElement("span");
+    label.textContent = item.food;
+    button.append(image, label);
+    button.addEventListener("click", async () => {
+      await els.presenter.resumeAudioPlayback?.();
+      state.profileKey = item.profileKey || profileForText(item.food);
+      state.captureId = item.captureId || crypto.randomUUID();
+      state.photoDataUrl = item.photo;
+      els.foodName.value = item.food;
+      els.storage.value = item.storageKey || "fridge";
+      els.condition.value = item.conditionKey || "fresh";
+      castAvatarForProfile(state.profileKey);
+      updateEstimate();
+      createPerformance();
+      resetConversation();
+      els.avatarFridge.hidden = true;
+      els.liveConsole.hidden = false;
+      els.avatarCloseButton.hidden = false;
+      await awakenSpirit();
+    });
+    els.fridgeFoodGrid.append(button);
+  });
+}
+
+function closeAvatarStage() {
+  els.presenter.interruptPresentation?.();
+  els.presenter.setListening?.(false);
+  stopVoiceSession({ submit: false, quiet: true });
+  els.liveConsole.hidden = true;
+  els.avatarFridge.hidden = false;
+  els.avatarCloseButton.hidden = true;
+  els.presenterStatus.textContent = "Choose a saved Food Spirit";
+  renderAvatarFridge();
 }
 
 function saveCurrentItem() {
@@ -1417,9 +1498,12 @@ function saveCurrentItem() {
     spirit: profile.spirit,
     performer: AVATAR_CASTS[state.avatarCastKey]?.label ?? "Meeks",
     storage: STORAGE_LABELS[els.storage.value],
+    storageKey: els.storage.value,
     condition:
       els.condition.options[els.condition.selectedIndex]?.textContent ??
       els.condition.value,
+    conditionKey: els.condition.value,
+    profileKey: state.profileKey,
     useWithinDays: state.estimatedDays,
     useBy: formatDate(state.estimatedDate),
     photo: state.photoDataUrl,
@@ -1477,6 +1561,10 @@ async function loadPhoto(file, statusMessage) {
   state.analysisRunId += 1;
   state.isAnalyzing = false;
   state.captureId = crypto.randomUUID();
+  state.selectedFileName = file.name || "";
+  els.avatarFridge.hidden = true;
+  els.liveConsole.hidden = false;
+  els.avatarCloseButton.hidden = true;
   state.pendingAutoSave = false;
   window.clearTimeout(state.autoSaveTimer);
   state.autoSaveTimer = null;
@@ -1546,6 +1634,7 @@ els.foodName.addEventListener("input", () => {
 els.navExperience.addEventListener("click", enterExperience);
 els.welcomeSkip.addEventListener("click", enterExperience);
 els.awakenButton.addEventListener("click", awakenSpirit);
+els.avatarCloseButton.addEventListener("click", closeAvatarStage);
 els.replayButton.addEventListener("click", async () => {
   try {
     await els.presenter.resumeAudioPlayback?.();
@@ -1618,7 +1707,12 @@ els.welcomePresenter.addEventListener("PRESENTER_STATUS", (event) => {
 });
 
 els.welcomePresenter.addEventListener("ALL_PERFORMANCE_FINISHED", () => {
-  if (state.welcomeStarted) enterExperience();
+  if (!state.welcomeStarted) return;
+  window.clearTimeout(state.welcomeTransitionTimer);
+  state.welcomeTransitionTimer = null;
+  els.welcomeStatus.textContent = "Airi's welcome is complete.";
+  els.welcomeAudioNote.textContent =
+    "Click Start with a photo when you are ready.";
 });
 
 els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {

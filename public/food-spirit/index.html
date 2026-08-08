@@ -273,10 +273,15 @@
             <div class="stage-orb stage-orb-two"></div>
             <div class="stage-topline">
               <span>Live Perxona performance</span>
-              <span class="stage-status" id="presenter-status">Waiting for a photo</span>
+              <span class="stage-actions">
+                <span class="stage-status" id="presenter-status">Waiting for a photo</span>
+                <button class="avatar-close-button" id="avatar-close-button" type="button" aria-label="Close the active Food Spirit" hidden>
+                  Close <span aria-hidden="true">&times;</span>
+                </button>
+              </span>
             </div>
 
-            <div class="live-console">
+            <div class="live-console" id="live-console">
               <div class="avatar-device" aria-label="Food Spirit premium mobile avatar display">
                 <span class="device-side-button device-action-button" aria-hidden="true"></span>
                 <span class="device-side-button device-volume-up" aria-hidden="true"></span>
@@ -412,6 +417,25 @@
                 </div>
               </div>
             </div>
+
+            <section class="avatar-fridge" id="avatar-fridge" hidden aria-labelledby="avatar-fridge-title">
+              <div class="fridge-shell">
+                <div class="fridge-brand">FOOD SPIRIT</div>
+                <div class="fridge-door">
+                  <span class="fridge-handle"></span>
+                  <div class="fridge-food-grid" id="fridge-food-grid"></div>
+                </div>
+                <div class="fridge-freezer"></div>
+              </div>
+              <div class="fridge-copy">
+                <p class="eyebrow">Your spirit fridge</p>
+                <h2 id="avatar-fridge-title">Choose a food to awaken again.</h2>
+                <p>Tap a saved photo to bring its Perxona avatar and voice back.</p>
+                <div class="fridge-empty" id="fridge-empty" hidden>
+                  Take and awaken a food photo first. Its thumbnail will live here.
+                </div>
+              </div>
+            </section>
           </aside>
           </section>
 
