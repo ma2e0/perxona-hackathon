@@ -70,10 +70,16 @@ environment variables before deploying:
 - `PERXONA_CONNECT_EMAIL`
 - `PERXONA_CONNECT_PASSWORD`
 - `PRESENTER_URL` (optional; the production Asia CDN is the default)
+- `PERXONA_PUBLIC_DEMO_ENABLED` (optional; defaults to `false`)
 
 Do not paste credential values into source files or expose them through public
 browser variables. The public demo uses one shared Perxona Connect identity, as
 intended by the official hackathon sample.
+
+Credential-backed API routes are automatically locked on Vercel production
+aliases. Preview deployments remain available for private hackathon judging.
+Set `PERXONA_PUBLIC_DEMO_ENABLED=true` only for a short, monitored public demo
+window after confirming the account's usage limits.
 
 ## Preparation notes
 

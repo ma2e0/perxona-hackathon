@@ -5,6 +5,9 @@ import express from "express";
 const PORT = process.env.PORT || 8083;
 const PERXONA_API_BASE_URL = process.env.PERXONA_API_BASE_URL;
 const USE_MOCK = process.env.USE_MOCK === "true";
+const IS_VERCEL_PRODUCTION = process.env.VERCEL_ENV === "production";
+const PUBLIC_DEMO_ENABLED =
+  process.env.PERXONA_PUBLIC_DEMO_ENABLED === "true";
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
   "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js";
@@ -416,6 +419,27 @@ const IS_DEV = process.env.NODE_ENV !== "production";
 app.use(express.static("public", { etag: !IS_DEV }));
 
 app.use(express.json());
+
+// A Vercel Git connection deploys the production branch automatically. Keep
+// credential-backed routes locked there until the owner explicitly enables the
+// public demo. Preview deployments remain fully functional for private judging.
+const PRODUCTION_API_ALLOWLIST = new Set(["/health", "/config"]);
+app.use("/api", (req, res, next) => {
+  if (
+    !IS_VERCEL_PRODUCTION ||
+    PUBLIC_DEMO_ENABLED ||
+    PRODUCTION_API_ALLOWLIST.has(req.path)
+  ) {
+    next();
+    return;
+  }
+
+  res.set("Cache-Control", "no-store");
+  res.status(503).json({
+    error:
+      "Shared Perxona sessions are disabled on the production alias. Use the hackathon preview deployment.",
+  });
+});
 
 /**
  * Wrap a route handler so any thrown error (upstream failure, or auth retry
