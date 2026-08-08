@@ -135,4 +135,5 @@ app keeps one active food presenter at a time for reliable performance.
 - Live demo: https://food-spirit.vercel.app
 - HTML storyboard: `public/Food-Spirit-Submission-Storyboard.html`
 - Hosted storyboard: https://food-spirit.vercel.app/Food-Spirit-Submission-Storyboard.html
+- Downloadable offline HTML: https://food-spirit.vercel.app/download/food-spirit-storyboard
 

@@ -1,8 +1,16 @@
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ── Config ──────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 8083;
+const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const STORYBOARD_DOWNLOAD_PATH = path.join(
+  PROJECT_ROOT,
+  "public",
+  "Food-Spirit-Submission-Storyboard-Download.html",
+);
 const PERXONA_API_BASE_URL = process.env.PERXONA_API_BASE_URL;
 const USE_MOCK = process.env.USE_MOCK === "true";
 const IS_VERCEL_PRODUCTION = process.env.VERCEL_ENV === "production";
@@ -421,6 +429,19 @@ app.disable("x-powered-by");
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 // ── Middleware ─────────────────────────────────────────────────────────────
+
+app.get("/download/food-spirit-storyboard", (_req, res, next) => {
+  res.download(
+    STORYBOARD_DOWNLOAD_PATH,
+    "Food-Spirit-Submission-Storyboard.html",
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300",
+      },
+    },
+    next,
+  );
+});
 
 app.use(express.static("public", { etag: !IS_DEV }));
 

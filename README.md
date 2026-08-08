@@ -20,6 +20,8 @@ The separate upload-ready HTML submission storyboard is
 [`public/Food-Spirit-Submission-Storyboard.html`](public/Food-Spirit-Submission-Storyboard.html).
 Its hosted presentation URL is
 `https://food-spirit.vercel.app/Food-Spirit-Submission-Storyboard.html`.
+Download the self-contained offline file from
+`https://food-spirit.vercel.app/download/food-spirit-storyboard`.
 
 The MVP now includes:
 
