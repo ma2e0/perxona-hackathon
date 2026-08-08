@@ -22,7 +22,12 @@ for (const name of variableNames) {
   }
 }
 
-function addEnvironmentVariable(name, target) {
+function addEnvironmentVariable(
+  name,
+  target,
+  value = process.env[name],
+  { sensitive = true } = {},
+) {
   return new Promise((resolve, reject) => {
     const targetArguments =
       target === "preview"
@@ -35,12 +40,12 @@ function addEnvironmentVariable(name, target) {
         "env",
         "add",
         ...targetArguments,
-        "--sensitive",
+        ...(sensitive ? ["--sensitive"] : []),
         "--yes",
         "--force",
         "--no-color",
         "--value",
-        process.env[name],
+        value,
       ],
       { cwd: process.cwd(), shell: false, stdio: ["ignore", "pipe", "pipe"] },
     );
@@ -82,5 +87,18 @@ for (const target of targets) {
     await addEnvironmentVariable(name, target);
   }
 }
+
+await addEnvironmentVariable(
+  "PERXONA_PUBLIC_DEMO_ENABLED",
+  "preview",
+  "true",
+  { sensitive: false },
+);
+await addEnvironmentVariable(
+  "PERXONA_PUBLIC_DEMO_ENABLED",
+  "production",
+  "false",
+  { sensitive: false },
+);
 
 console.log("Vercel environment configuration complete.");
