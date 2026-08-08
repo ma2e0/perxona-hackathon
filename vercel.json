@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "express",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/food-spirit/",
+      "permanent": false
+    },
+    {
+      "source": "/demos/:path*",
+      "destination": "/food-spirit/",
+      "permanent": false
+    }
+  ]
+}

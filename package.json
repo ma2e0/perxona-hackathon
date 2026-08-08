@@ -1,0 +1,23 @@
+{
+  "name": "food-spirit",
+  "version": "0.1.0",
+  "description": "Food Spirit — a Perxona-powered expressive food companion for the Tokyo hackathon",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node --check server.mjs && node --check public/food-spirit/app.js && node --check public/demos/basic/app.js && node --check public/demos/starter/app.js && node --check public/demos/external-llm/app.js && node --check public/demos/chatbot/app.js",
+    "predev": "node scripts/check-env.mjs",
+    "prestart": "node scripts/check-env.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "dev": "node --env-file=.env --watch server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@perxona/presenter-types": "latest"
+  }
+}

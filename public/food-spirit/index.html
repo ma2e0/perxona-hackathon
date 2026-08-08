@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Photograph food, meet its expressive Perxona-powered spirit, and remember when to use it."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Food Spirit — Give your food a voice" />
+    <meta
+      property="og:description"
+      content="Photograph food, meet its expressive Perxona-powered spirit, and remember when to use it."
+    />
+    <meta property="og:image" content="/food-spirit/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Food Spirit — Give your food a voice" />
+    <meta
+      name="twitter:description"
+      content="Photograph food, meet its expressive Perxona-powered spirit, and remember when to use it."
+    />
+    <meta name="twitter:image" content="/food-spirit/og.png" />
+    <title>Food Spirit — Give your food a voice</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"
+      defer
+    ></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/food-spirit/" aria-label="Food Spirit home">
+          <span class="brand-mark" aria-hidden="true">芽</span>
+          <span>Food Spirit</span>
+        </a>
+        <div class="connection-pill" id="connection-pill" data-state="loading">
+          <span class="connection-dot" aria-hidden="true"></span>
+          <span id="connection-label">Connecting to Perxona</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero-grid" aria-labelledby="page-title">
+          <article class="capture-panel">
+            <p class="eyebrow">Tokyo hackathon prototype</p>
+            <h1 id="page-title">Your food has something to say.</h1>
+            <p class="lede">
+              Take a photo. Food Spirit identifies it on your device, estimates
+              when to use it, and gives it a living voice through Perxona.
+            </p>
+
+            <div class="step-heading">
+              <span>01</span>
+              <div>
+                <strong>Photograph your food</strong>
+                <small>Camera or photo library</small>
+              </div>
+            </div>
+
+            <label class="upload-zone" id="upload-zone">
+              <input
+                id="food-photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+              />
+              <img id="photo-preview" alt="Selected food preview" hidden />
+              <span class="upload-prompt" id="upload-prompt">
+                <span class="camera-glyph" aria-hidden="true">◎</span>
+                <strong>Take or choose a photo</strong>
+                <small>JPG, PNG or HEIC supported by your browser</small>
+              </span>
+              <span class="replace-photo" id="replace-photo" hidden>
+                Choose another photo
+              </span>
+            </label>
+
+            <div class="capture-actions">
+              <button class="primary-button" id="analyze-button" disabled>
+                <span>Discover its spirit</span>
+                <span aria-hidden="true">→</span>
+              </button>
+              <button class="sample-button" id="sample-button" type="button">
+                Try a sample banana
+              </button>
+            </div>
+            <p class="inline-status" id="analysis-status" role="status"></p>
+
+            <section class="analysis-card" id="analysis-card" hidden>
+              <div class="result-heading">
+                <div>
+                  <p class="eyebrow">Spirit discovered</p>
+                  <h2 id="spirit-name">Mori</h2>
+                </div>
+                <span class="confidence-badge" id="confidence-badge">Review</span>
+              </div>
+
+              <label class="field">
+                <span>What food is this?</span>
+                <input id="food-name" type="text" autocomplete="off" />
+                <small>You can correct the on-device recognition.</small>
+              </label>
+
+              <div class="field-row">
+                <label class="field">
+                  <span>Current condition</span>
+                  <select id="condition-select">
+                    <option value="fresh">Fresh / just bought</option>
+                    <option value="ripe" selected>Ripe / ready</option>
+                    <option value="very-ripe">Very ripe / use soon</option>
+                    <option value="leftover">Cooked leftover</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Stored in</span>
+                  <select id="storage-select">
+                    <option value="counter">Counter</option>
+                    <option value="fridge" selected>Fridge</option>
+                    <option value="freezer">Freezer</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="use-by-card">
+                <span class="use-by-icon" aria-hidden="true">◷</span>
+                <div>
+                  <small>Estimated use window</small>
+                  <strong id="use-window">Use within 3 days</strong>
+                  <span id="use-date">Before —</span>
+                </div>
+              </div>
+
+              <p class="safety-note">
+                This is a planning estimate, not a food-safety decision. Check
+                the package date, smell, texture, and official storage guidance.
+              </p>
+
+              <button class="awaken-button" id="awaken-button">
+                <span aria-hidden="true">✦</span>
+                <span>Awaken this Food Spirit</span>
+              </button>
+            </section>
+          </article>
+
+          <aside class="spirit-stage" aria-label="Food Spirit avatar stage">
+            <div class="stage-orb stage-orb-one"></div>
+            <div class="stage-orb stage-orb-two"></div>
+            <div class="stage-topline">
+              <span>Live Perxona performance</span>
+              <span class="stage-status" id="presenter-status">Waiting for a photo</span>
+            </div>
+
+            <div class="presenter-frame">
+              <sv-presenter id="presenter" hidden></sv-presenter>
+              <div class="stage-placeholder" id="stage-placeholder">
+                <div class="spirit-seed" aria-hidden="true">
+                  <span>✦</span>
+                </div>
+                <h2>A voice is waiting inside.</h2>
+                <p>Your expressive avatar will appear here after recognition.</p>
+              </div>
+            </div>
+
+            <div class="speech-card" id="speech-card" hidden>
+              <p class="speech-label" id="speech-label">Mori says</p>
+              <blockquote id="speech-text"></blockquote>
+              <div class="speech-actions">
+                <button class="secondary-button" id="replay-button">
+                  Replay voice
+                </button>
+                <button class="secondary-button strong" id="save-button">
+                  Save privately on this device
+                </button>
+              </div>
+              <p class="device-note">
+                Nothing is uploaded. Remove any saved item whenever you like.
+              </p>
+            </div>
+          </aside>
+        </section>
+
+        <section class="inventory-section" aria-labelledby="inventory-title">
+          <div class="inventory-heading">
+            <div>
+              <p class="eyebrow">Your living pantry</p>
+              <h2 id="inventory-title">Food spirits to remember</h2>
+            </div>
+            <span id="inventory-count">0 saved</span>
+          </div>
+          <div class="inventory-grid" id="inventory-grid"></div>
+          <p class="empty-inventory" id="empty-inventory">
+            Saved spirits will appear here with their use-by estimates.
+          </p>
+        </section>
+      </main>
+
+      <footer>
+        <span>Food Spirit prototype</span>
+        <span>On-device recognition · Perxona Connect avatar performance</span>
+      </footer>
+    </div>
+  </body>
+</html>
