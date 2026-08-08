@@ -18,15 +18,19 @@ With the local server running, open:
 
 The MVP now includes:
 
-- smartphone camera and photo upload
-- on-device MobileNet food recognition with a manual correction field
+- smartphone camera and photo upload with automatic recognition—no separate
+  discover step
+- immediate on-device MobileNet candidates normalized by a dedicated Perxona
+  Food Vision Refiner, with a manual correction field
 - freshness and use-by estimation based on food, condition, and storage
 - live Perxona avatar, scene, voice, emotion, and compatible motion selection
 - a first-person Food Spirit performance with replay
-- multi-turn text chat backed by a dedicated Perxona chatbot
+- multi-turn text chat backed by a dedicated Perxona chatbot that receives the
+  device's saved pantry and can combine real saved ingredients into rescue meals
 - tap-to-talk browser speech recognition: tap **Talk**, speak naturally, then
   tap **Done** to send, with automatic recognition-session recovery and text fallback
 - an animated, responsive landing experience built around the Food Spirit artwork
+- a desktop phone-and-chat performance console plus a swipeable mobile chat sheet
 - a local, browser-only pantry inventory with compressed photo thumbnails
 - a clear food-safety disclaimer and explicit compost/share/freeze/use-soon guidance
 
@@ -89,6 +93,8 @@ environment variables before deploying:
 - `PERXONA_CONNECT_PASSWORD`
 - `PRESENTER_URL` (optional; the production Asia CDN is the default)
 - `PERXONA_PUBLIC_DEMO_ENABLED` (optional; defaults to `false`)
+- `FOOD_SPIRIT_CHATBOT_ID` (optional; the Food Spirit conversation bot)
+- `FOOD_VISION_REFINER_ID` (optional; normalizes on-device classifier candidates)
 
 Do not paste credential values into source files or expose them through public
 browser variables. The public demo uses one shared Perxona Connect identity, as

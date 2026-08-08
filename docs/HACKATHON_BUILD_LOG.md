@@ -28,3 +28,10 @@ Food Spirit was implemented during the Perxona Tokyo Hackathon on August 8,
   speech fragment immediately
 - Responsive desktop/mobile polish and an animated landing experience reuse the
   high-resolution Food Spirit campaign artwork
+- Photo selection now launches recognition automatically: MobileNet returns an
+  immediate private match and the dedicated Perxona Food Vision Refiner
+  normalizes the top candidate labels before the user selects **Awaken**
+- Food Spirit conversation now receives the saved device pantry, uses the real
+  ingredients in recipe answers, and prioritizes the shortest use window
+- The live stage uses a phone-shaped avatar display beside chat on desktop and a
+  touch-drag, collapsible bottom conversation sheet on mobile

@@ -50,6 +50,8 @@ const CONNECT_EMAIL = process.env.PERXONA_CONNECT_EMAIL;
 const CONNECT_PASSWORD = process.env.PERXONA_CONNECT_PASSWORD;
 const FOOD_SPIRIT_CHATBOT_ID =
   process.env.FOOD_SPIRIT_CHATBOT_ID || "01KZFTCA9W3A7NBJ31PS0Q7XPB";
+const FOOD_VISION_REFINER_ID =
+  process.env.FOOD_VISION_REFINER_ID || "01KZFYDQWN5AJ1PYX8B7E9NWQQ";
 
 if (hasConfiguredPresenterTarget && !hasCompletePresenterTarget) {
   console.error(
@@ -490,6 +492,7 @@ app.get("/api/config", (_req, res) => {
     defaults: DEMO_DEFAULTS,
     fixedTarget: fixedPresenterTarget,
     foodSpiritChatbotId: FOOD_SPIRIT_CHATBOT_ID,
+    foodVisionRefinerId: FOOD_VISION_REFINER_ID,
   });
 });
 

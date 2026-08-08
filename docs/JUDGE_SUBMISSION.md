@@ -26,11 +26,13 @@ forgotten. The avatar is the behavioral interface, not a decorative result.
 ## Verified MVP
 
 - smartphone camera and photo-library input
-- private, on-device MobileNet recognition with manual correction
+- automatic on-device MobileNet recognition, Perxona AI label refinement, and
+  manual correction
 - condition- and storage-aware useful-by estimate
 - live Perxona avatar, scene, voice, expression, and compatible motion
 - first-person Food Spirit performance and replay
-- multi-turn Perxona chatbot conversation by text or push-to-talk voice
+- multi-turn Perxona chatbot conversation by text or push-to-talk voice, using
+  the foods actually saved in the device pantry
 - browser-only pantry with photo thumbnail and removal control
 - graceful transcript and save fallback if the 3D engine is unavailable
 
@@ -43,11 +45,12 @@ food becomes invisible. Food Spirit gives it a voice before it is forgotten.”
 
 ### 0:15–0:40 — Discover
 
-Take a food photo or select **Try a sample banana**, then select
-**Discover its spirit**.
+Take a food photo or select **Try a sample banana**. Recognition starts
+automatically and reveals the spirit without another button.
 
-“The image is recognized privately on this device. The result is editable, so
-the human stays in control.”
+“The photo stays on this device. Private on-device vision creates text
+candidates, then Perxona AI normalizes those candidate labels. The result stays
+editable, so the human remains in control.”
 
 ### 0:40–1:00 — Make time visible
 
@@ -67,12 +70,13 @@ expires in four days’; it is a character asking not to be forgotten.”
 Tap **Talk**, ask “What can I make with you tonight?”, then tap **Done**.
 
 “The microphone becomes text, the Perxona chatbot receives the banana's current
-condition and use window, and the avatar performs its contextual answer. Typed
-questions remain available if microphone recognition is unavailable.”
+condition, use window, and the foods actually saved in the pantry, and the avatar
+performs its contextual answer. Typed questions remain available if microphone
+recognition is unavailable.”
 
 ### 1:40–1:55 — Private memory
 
-Select **Save privately on this device**, then reload and show that the pantry
+Select **Save on this device**, then reload and show that the pantry
 item remains.
 
 “The pantry stays on this device. The user can remove it at any time.”
@@ -101,9 +105,11 @@ In browser local storage on the device. No server account is needed for the
 prototype.
 
 **What leaves the device during conversation?**
-The photo and pantry remain local. Typed text and voice transcripts are sent to
-Perxona for the chatbot reply; browser voice recognition may use the browser
-vendor's speech service.
+The photo remains local. The question or voice transcript, current food details,
+and saved pantry labels, storage, condition, and use-by details are sent to
+Perxona for the chatbot reply. Browser voice recognition may also use the
+browser vendor's speech service. The full pantry record and photo thumbnails
+remain in browser local storage.
 
 **Can it support many food characters?**  
 Yes. The app can map foods to different Perxona avatar, scene, voice, and motion

@@ -165,9 +165,14 @@ const els = {
   connectionPill: document.querySelector("#connection-pill"),
   connectionLabel: document.querySelector("#connection-label"),
   fileInput: document.querySelector("#food-photo"),
+  uploadZone: document.querySelector("#upload-zone"),
   photoPreview: document.querySelector("#photo-preview"),
   uploadPrompt: document.querySelector("#upload-prompt"),
   replacePhoto: document.querySelector("#replace-photo"),
+  recognitionOverlay: document.querySelector("#recognition-overlay"),
+  recognitionTitle: document.querySelector("#recognition-title"),
+  recognitionDetail: document.querySelector("#recognition-detail"),
+  aiRefinementPill: document.querySelector("#ai-refinement-pill"),
   analyzeButton: document.querySelector("#analyze-button"),
   sampleButton: document.querySelector("#sample-button"),
   analysisStatus: document.querySelector("#analysis-status"),
@@ -183,7 +188,10 @@ const els = {
   presenter: document.querySelector("#presenter"),
   presenterStatus: document.querySelector("#presenter-status"),
   stagePlaceholder: document.querySelector("#stage-placeholder"),
+  deviceSpiritName: document.querySelector("#device-spirit-name"),
   speechCard: document.querySelector("#speech-card"),
+  chatSheetHandle: document.querySelector("#chat-sheet-handle"),
+  chatSheetLabel: document.querySelector("#chat-sheet-label"),
   speechLabel: document.querySelector("#speech-label"),
   speechText: document.querySelector("#speech-text"),
   replayButton: document.querySelector("#replay-button"),
@@ -222,7 +230,11 @@ const state = {
   voices: [],
   motion: null,
   chatbotId: null,
+  refinerChatbotId: null,
   chatHistory: [],
+  isAnalyzing: false,
+  analysisRunId: 0,
+  chatSheetCollapsed: false,
   isReplying: false,
   recognition: null,
   isListening: false,
@@ -280,6 +292,7 @@ async function preparePerxona() {
   try {
     const config = await request("/api/config");
     state.chatbotId = config.foodSpiritChatbotId ?? null;
+    state.refinerChatbotId = config.foodVisionRefinerId ?? null;
     await loadScript(config.presenterUrl);
     await customElements.whenDefined("sv-presenter");
 
@@ -341,7 +354,9 @@ async function ensureRecognitionModel() {
   if (!window.mobilenet) {
     throw new Error("On-device recognition is still loading. Try again shortly.");
   }
-  state.model = await window.mobilenet.load({ version: 2, alpha: 1 });
+  // The compact model returns candidates quickly; Perxona then performs the
+  // semantic label refinement instead of making the user wait for a larger model.
+  state.model = await window.mobilenet.load({ version: 2, alpha: 0.5 });
   return state.model;
 }
 
@@ -370,6 +385,7 @@ function updateEstimate() {
   state.estimatedDate.setDate(state.estimatedDate.getDate() + state.estimatedDays);
 
   els.spiritName.textContent = profile.spirit;
+  els.deviceSpiritName.textContent = profile.spirit;
   els.useWindow.textContent = `Use within ${state.estimatedDays} ${state.estimatedDays === 1 ? "day" : "days"}`;
   els.useDate.textContent = `Plan to use before ${formatDate(state.estimatedDate)}`;
 }
@@ -396,39 +412,228 @@ function createPerformance() {
   els.conversationInput.placeholder = `Ask ${profile.spirit} something...`;
 }
 
+function isMobileChatSheet() {
+  return globalThis.matchMedia?.("(max-width: 760px)").matches ?? false;
+}
+
+function setChatSheetCollapsed(collapsed) {
+  state.chatSheetCollapsed = Boolean(collapsed && isMobileChatSheet());
+  els.speechCard.style.removeProperty("transform");
+  els.speechCard.classList.toggle("is-collapsed", state.chatSheetCollapsed);
+  els.speechCard.classList.remove("is-dragging");
+  els.chatSheetHandle.setAttribute(
+    "aria-expanded",
+    String(!state.chatSheetCollapsed),
+  );
+  els.chatSheetLabel.textContent = state.chatSheetCollapsed
+    ? "Open conversation"
+    : "Conversation";
+}
+
+function setupChatSheet() {
+  let startY = 0;
+  let startOffset = 0;
+  let currentOffset = 0;
+  let maxOffset = 0;
+  let dragging = false;
+  let ignoreNextClick = false;
+
+  els.chatSheetHandle.addEventListener("pointerdown", (event) => {
+    if (!isMobileChatSheet() || els.speechCard.hidden) return;
+    dragging = true;
+    startY = event.clientY;
+    maxOffset = Math.max(0, els.speechCard.offsetHeight - 82);
+    startOffset = state.chatSheetCollapsed ? maxOffset : 0;
+    currentOffset = startOffset;
+    els.speechCard.classList.add("is-dragging");
+    document.body.classList.add("chat-sheet-dragging");
+    els.chatSheetHandle.setPointerCapture?.(event.pointerId);
+  });
+
+  els.chatSheetHandle.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
+    const delta = event.clientY - startY;
+    currentOffset = Math.min(maxOffset, Math.max(0, startOffset + delta));
+    els.speechCard.style.transform = `translateY(${currentOffset}px)`;
+    if (Math.abs(delta) > 8) ignoreNextClick = true;
+  });
+
+  const finishDrag = (event) => {
+    if (!dragging) return;
+    dragging = false;
+    els.chatSheetHandle.releasePointerCapture?.(event.pointerId);
+    document.body.classList.remove("chat-sheet-dragging");
+    setChatSheetCollapsed(currentOffset > maxOffset * 0.42);
+    setTimeout(() => {
+      ignoreNextClick = false;
+    }, 0);
+  };
+
+  els.chatSheetHandle.addEventListener("pointerup", finishDrag);
+  els.chatSheetHandle.addEventListener("pointercancel", finishDrag);
+  els.chatSheetHandle.addEventListener("click", () => {
+    if (!isMobileChatSheet() || ignoreNextClick) return;
+    setChatSheetCollapsed(!state.chatSheetCollapsed);
+  });
+
+  globalThis.addEventListener("resize", () => {
+    if (!isMobileChatSheet()) setChatSheetCollapsed(false);
+  });
+}
+
+function setRecognitionProgress({ active, title, detail }) {
+  els.uploadZone.dataset.state = active ? "recognizing" : "ready";
+  els.recognitionOverlay.hidden = !active;
+  if (title) els.recognitionTitle.textContent = title;
+  if (detail) els.recognitionDetail.textContent = detail;
+  els.sampleButton.disabled = active;
+}
+
+function applyRecognitionResult({ profileKey, confidence, foodName, source }) {
+  state.profileKey = profileKey;
+  state.confidence = confidence;
+  const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  els.foodName.value = foodName || profile.label;
+  els.spiritName.textContent = profile.spirit;
+  els.deviceSpiritName.textContent = profile.spirit;
+  els.confidenceBadge.textContent =
+    source === "ai"
+      ? `AI refined · ${Math.round(confidence * 100)}%`
+      : profileKey === "food"
+        ? "Please confirm"
+        : `${Math.round(confidence * 100)}% visual match`;
+  els.aiRefinementPill.hidden = source !== "ai";
+  els.analysisCard.hidden = false;
+  els.awakenButton.disabled = false;
+  updateEstimate();
+  createPerformance();
+}
+
+function parseRefinedFood(replyText) {
+  const jsonText = String(replyText ?? "").match(/\{[\s\S]*\}/)?.[0];
+  if (!jsonText) return null;
+  try {
+    const parsed = JSON.parse(jsonText);
+    const food = String(parsed.food ?? "").trim().slice(0, 60);
+    const confidence = Math.min(1, Math.max(0, Number(parsed.confidence) || 0));
+    if (!food || /^unknown food$/i.test(food) || confidence <= 0) return null;
+    return {
+      food,
+      confidence,
+      profileKey: profileForText(food),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function refineFoodPredictions(predictions) {
+  if (!state.refinerChatbotId) {
+    const config = await request("/api/config");
+    state.refinerChatbotId = config.foodVisionRefinerId ?? null;
+  }
+  if (!state.refinerChatbotId) return null;
+
+  const candidates = predictions
+    .map(
+      (prediction, index) =>
+        `${index + 1}. ${prediction.className} (${Math.round(prediction.probability * 100)}%)`,
+    )
+    .join("; ");
+  const signal = globalThis.AbortSignal?.timeout?.(9000);
+  const response = await request(
+    `/api/chatbots/${state.refinerChatbotId}/chat`,
+    {
+      method: "POST",
+      body: {
+        messages: [
+          {
+            role: "user",
+            parts: [
+              {
+                type: "text",
+                text: `On-device candidates: ${candidates}. Return the required JSON.`,
+              },
+            ],
+          },
+        ],
+      },
+      ...(signal ? { signal } : {}),
+    },
+  );
+  if (response.status !== "succeeded") return null;
+  return parseRefinedFood(response.reply_text);
+}
+
 async function analyzePhoto() {
   if (!els.photoPreview.src) return;
-  els.analyzeButton.disabled = true;
+  const runId = ++state.analysisRunId;
+  state.isAnalyzing = true;
+  els.analyzeButton.hidden = true;
+  els.aiRefinementPill.hidden = true;
+  els.awakenButton.disabled = true;
+  setRecognitionProgress({
+    active: true,
+    title: "Reading your photo",
+    detail: "Private on-device vision is finding the strongest food matches.",
+  });
   els.analysisStatus.textContent = "Loading private on-device recognition…";
 
-  let result = { profileKey: "food", confidence: 0 };
   try {
     const model = await ensureRecognitionModel();
     els.analysisStatus.textContent = "Looking at shape, color, and visual clues…";
     const predictions = await model.classify(els.photoPreview, 5);
-    result = profileForPredictions(predictions);
+    if (runId !== state.analysisRunId) return;
+    const visualResult = profileForPredictions(predictions);
+    const visualProfile = FOOD_PROFILES[visualResult.profileKey] ?? FOOD_PROFILES.food;
+    applyRecognitionResult({
+      ...visualResult,
+      foodName: visualProfile.label,
+      source: "visual",
+    });
+    setRecognitionProgress({
+      active: false,
+      title: "Food match found",
+      detail: "Perxona AI is checking the label.",
+    });
     els.analysisStatus.textContent =
-      result.profileKey === "food"
-        ? "I need your help confirming this one."
-        : "Recognition complete. You can correct it below.";
-  } catch (error) {
-    els.analysisStatus.textContent = `${error.message} You can identify it manually below.`;
-  }
+      "Visual match ready. Perxona AI is refining the food label…";
+    els.analysisCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-  state.profileKey = result.profileKey;
-  state.confidence = result.confidence;
-  const profile = FOOD_PROFILES[state.profileKey];
-  els.foodName.value = profile.label;
-  els.spiritName.textContent = profile.spirit;
-  els.confidenceBadge.textContent =
-    result.profileKey === "food"
-      ? "Please confirm"
-      : `${Math.round(result.confidence * 100)}% visual match`;
-  els.analysisCard.hidden = false;
-  updateEstimate();
-  createPerformance();
-  els.analyzeButton.disabled = false;
-  els.analysisCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    try {
+      const refined = await refineFoodPredictions(predictions);
+      if (runId !== state.analysisRunId) return;
+      if (refined) {
+        applyRecognitionResult({ ...refined, foodName: refined.food, source: "ai" });
+        els.analysisStatus.textContent =
+          "Spirit discovered. Confirm the label and tap Awaken.";
+      } else {
+        els.analysisStatus.textContent =
+          "Visual match ready. Confirm the label and tap Awaken.";
+      }
+    } catch {
+      els.analysisStatus.textContent =
+        "Visual match ready. AI refinement was unavailable, so please confirm the label.";
+    }
+  } catch (error) {
+    if (runId !== state.analysisRunId) return;
+    applyRecognitionResult({
+      profileKey: "food",
+      confidence: 0,
+      foodName: "Fresh food",
+      source: "visual",
+    });
+    els.analysisStatus.textContent = `${error.message} Identify it manually or retry.`;
+    els.analyzeButton.hidden = false;
+  } finally {
+    if (runId !== state.analysisRunId) return;
+    state.isAnalyzing = false;
+    setRecognitionProgress({
+      active: false,
+      title: "Reading your photo",
+      detail: "Private on-device vision is finding the strongest food matches.",
+    });
+  }
 }
 
 async function initializePresenter() {
@@ -485,6 +690,7 @@ async function presentSpirit() {
     throw new Error(result?.message || result?.code || "Presentation failed.");
   }
   els.speechCard.hidden = false;
+  setChatSheetCollapsed(false);
 }
 
 async function awakenSpirit() {
@@ -492,6 +698,7 @@ async function awakenSpirit() {
   els.presenterStatus.textContent = "Awakening…";
   createPerformance();
   els.speechCard.hidden = false;
+  setChatSheetCollapsed(false);
   try {
     await els.presenter.resumeAudioPlayback?.();
     await initializePresenter();
@@ -531,6 +738,21 @@ function resetConversation() {
     : "Voice input is unavailable in this browser. Text conversation still works.";
 }
 
+function savedPantryContext() {
+  if (state.inventory.length === 0) {
+    return "Saved pantry items: none. Do not invent saved ingredients.";
+  }
+
+  const items = state.inventory.slice(0, 12).map((item, index) => {
+    const condition = item.condition ? `, condition ${item.condition}` : "";
+    const useWindow = item.useWithinDays
+      ? `, use within ${item.useWithinDays} days`
+      : "";
+    return `${index + 1}. ${item.food}, stored ${item.storage}${condition}${useWindow}, use by ${item.useBy}`;
+  });
+  return `Saved pantry items available to the user: ${items.join("; ")}. Use only these saved items plus ordinary staples unless the user provides another ingredient.`;
+}
+
 function currentFoodContext(question) {
   const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
   const foodName = els.foodName.value.trim() || profile.label;
@@ -544,6 +766,7 @@ function currentFoodContext(question) {
     `Condition: ${condition}.`,
     `Storage: ${STORAGE_LABELS[els.storage.value]}.`,
     `Estimated planning window: ${state.estimatedDays} ${state.estimatedDays === 1 ? "day" : "days"}, before ${formatDate(state.estimatedDate)}.`,
+    savedPantryContext(),
     `User question: ${question}`,
   ].join(" ");
 }
@@ -566,6 +789,18 @@ function fallbackFoodReply(question) {
       (word) => normalized.includes(word),
     )
   ) {
+    if (
+      state.inventory.length > 0 &&
+      ["pantry", "fridge", "saved", "other", "together"].some((word) =>
+        normalized.includes(word),
+      )
+    ) {
+      const pantryNames = state.inventory
+        .slice(0, 5)
+        .map((item) => item.food)
+        .join(", ");
+      return `Your saved pantry includes ${pantryNames}. Use the items with the earliest dates first, and ask me again when Perxona is available for a specific combination.`;
+    }
     return `Turn me into ${idea}. I would love to become tonight's rescue meal instead of being forgotten.`;
   }
   if (
@@ -613,6 +848,7 @@ async function askFoodSpirit(rawQuestion) {
 
   const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
   state.isReplying = true;
+  setChatSheetCollapsed(false);
   els.conversationInput.value = "";
   els.conversationInput.disabled = true;
   els.conversationSend.disabled = true;
@@ -871,6 +1107,10 @@ function saveCurrentItem() {
     food: els.foodName.value.trim() || profile.label,
     spirit: profile.spirit,
     storage: STORAGE_LABELS[els.storage.value],
+    condition:
+      els.condition.options[els.condition.selectedIndex]?.textContent ??
+      els.condition.value,
+    useWithinDays: state.estimatedDays,
     useBy: formatDate(state.estimatedDate),
     photo: state.photoDataUrl,
   };
@@ -880,7 +1120,7 @@ function saveCurrentItem() {
   renderInventory();
   els.saveButton.textContent = "Saved on this device";
   setTimeout(() => {
-    els.saveButton.textContent = "Save privately on this device";
+    els.saveButton.textContent = "Save on this device";
   }, 1800);
 }
 
@@ -914,7 +1154,10 @@ async function createStoredPhoto(image, file) {
 }
 
 async function loadPhoto(file, statusMessage) {
-  els.analyzeButton.disabled = true;
+  state.analysisRunId += 1;
+  state.isAnalyzing = false;
+  els.analyzeButton.hidden = true;
+  els.aiRefinementPill.hidden = true;
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.previewUrl = URL.createObjectURL(file);
   els.photoPreview.src = state.previewUrl;
@@ -923,6 +1166,7 @@ async function loadPhoto(file, statusMessage) {
   els.replacePhoto.hidden = false;
   els.analysisCard.hidden = true;
   els.speechCard.hidden = true;
+  setChatSheetCollapsed(false);
   resetConversation();
   els.analysisStatus.textContent = statusMessage;
   state.presenterInitialized = false;
@@ -932,7 +1176,7 @@ async function loadPhoto(file, statusMessage) {
   els.stagePlaceholder.hidden = false;
   els.presenterStatus.textContent = "Waiting to awaken this photo";
   state.photoDataUrl = await createStoredPhoto(els.photoPreview, file);
-  els.analyzeButton.disabled = false;
+  await analyzePhoto();
 }
 
 els.fileInput.addEventListener("change", async () => {
@@ -1042,6 +1286,7 @@ els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
 });
 
 setupSpeechRecognition();
+setupChatSheet();
 renderInventory();
 preparePerxona();
 window.addEventListener("load", () => {
