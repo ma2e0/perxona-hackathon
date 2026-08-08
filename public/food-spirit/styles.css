@@ -1716,12 +1716,14 @@ blockquote {
 }
 
 .inventory-section {
-  padding: 70px 0 30px;
+  margin-top: 64px;
+  padding: 58px 0 24px;
+  border-top: 1px solid var(--line);
 }
 
 .inventory-heading h2 {
   margin-bottom: 0;
-  font-size: clamp(30px, 4vw, 48px);
+  font-size: clamp(28px, 3.2vw, 40px);
   letter-spacing: -0.05em;
 }
 
@@ -1732,7 +1734,7 @@ blockquote {
 
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-top: 28px;
 }
@@ -1805,6 +1807,83 @@ footer {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+@media (min-width: 1041px) {
+  body.experience-open {
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  body.experience-open .app-shell {
+    height: 100svh;
+    padding-bottom: 0;
+  }
+
+  body.experience-open .experience-page {
+    height: calc(100svh - 82px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.experience-open .hero-grid {
+    height: 100%;
+    min-height: 0;
+  }
+
+  body.experience-open .capture-panel {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: rgba(216, 255, 114, 0.22) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+
+  body.experience-open .capture-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  body.experience-open .capture-panel::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(216, 255, 114, 0.22);
+    background-clip: padding-box;
+  }
+
+  body.experience-open .capture-panel::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
+  }
+
+  body.experience-open .spirit-stage {
+    height: 100%;
+    min-height: 0;
+    padding-bottom: 24px;
+  }
+
+  body.experience-open .avatar-device {
+    position: relative;
+    top: auto;
+  }
+
+  body.experience-open .presenter-frame {
+    height: clamp(500px, calc(100svh - 210px), 620px);
+    min-height: 0;
+  }
+
+  body.experience-open sv-presenter {
+    height: 100%;
+  }
+
+  body.experience-open .speech-card,
+  body.experience-open .chat-dock-scroll {
+    max-height: clamp(500px, calc(100svh - 210px), 690px);
+  }
+
+  body.experience-open footer {
+    display: none;
+  }
 }
 
 @media (max-width: 1040px) {

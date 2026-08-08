@@ -1,0 +1,1476 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Food Spirit — Perxona Tokyo Hackathon submission storyboard"
+    />
+    <title>Food Spirit — Submission Storyboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #17151d;
+        --ink-deep: #0c0a10;
+        --panel: #211f2a;
+        --panel-soft: #292633;
+        --cream: #f6f0df;
+        --muted: #aaa5b4;
+        --line: rgba(246, 240, 223, 0.13);
+        --lime: #d8ff72;
+        --coral: #ff826e;
+        --lavender: #9e91ff;
+        --shadow: 0 32px 100px rgba(0, 0, 0, 0.36);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-snap-type: y mandatory;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 8% 8%, rgba(158, 145, 255, 0.15), transparent 28%),
+          radial-gradient(circle at 92% 72%, rgba(216, 255, 114, 0.08), transparent 26%),
+          var(--ink);
+        color: var(--cream);
+      }
+
+      a,
+      button {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+      }
+
+      .deck-progress {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 100;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .deck-progress span {
+        width: 8.33%;
+        height: 100%;
+        display: block;
+        transform-origin: left;
+        background: linear-gradient(90deg, var(--lime), #a7df46);
+        box-shadow: 0 0 18px rgba(216, 255, 114, 0.42);
+        transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .deck-header {
+        position: fixed;
+        inset: 4px 0 auto;
+        z-index: 90;
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 0 clamp(20px, 4vw, 64px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(15, 13, 19, 0.72);
+        backdrop-filter: blur(22px) saturate(1.2);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        color: var(--cream);
+        font-weight: 820;
+        letter-spacing: -0.025em;
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--lime);
+        color: #202513;
+        box-shadow: 0 10px 28px rgba(216, 255, 114, 0.23);
+      }
+
+      .deck-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--lime);
+        box-shadow: 0 0 0 5px rgba(216, 255, 114, 0.09), 0 0 15px var(--lime);
+      }
+
+      .deck-nav {
+        position: fixed;
+        top: 50%;
+        right: 18px;
+        z-index: 95;
+        display: grid;
+        gap: 8px;
+        transform: translateY(-50%);
+      }
+
+      .deck-nav button {
+        width: 9px;
+        height: 9px;
+        padding: 0;
+        border: 1px solid rgba(246, 240, 223, 0.4);
+        border-radius: 50%;
+        background: rgba(246, 240, 223, 0.08);
+        cursor: pointer;
+        transition: transform 180ms ease, background 180ms ease;
+      }
+
+      .deck-nav button[aria-current="true"] {
+        transform: scale(1.55);
+        border-color: var(--lime);
+        background: var(--lime);
+        box-shadow: 0 0 12px rgba(216, 255, 114, 0.5);
+      }
+
+      .slide {
+        position: relative;
+        min-height: 100svh;
+        display: grid;
+        align-items: center;
+        overflow: hidden;
+        padding: 104px clamp(28px, 6vw, 96px) 54px;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        isolation: isolate;
+      }
+
+      .slide::before {
+        position: absolute;
+        z-index: -2;
+        width: 520px;
+        height: 520px;
+        border-radius: 50%;
+        background: rgba(158, 145, 255, 0.08);
+        filter: blur(2px);
+        content: "";
+      }
+
+      .slide:nth-of-type(odd)::before {
+        top: -260px;
+        right: -220px;
+      }
+
+      .slide:nth-of-type(even)::before {
+        bottom: -290px;
+        left: -240px;
+        background: rgba(216, 255, 114, 0.055);
+      }
+
+      .slide-inner {
+        width: min(1280px, 100%);
+        margin: 0 auto;
+      }
+
+      .slide-number {
+        margin-bottom: 18px;
+        color: var(--lime);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        margin: 0 0 14px;
+        color: var(--lime);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.17em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1,
+      h2 {
+        max-width: 980px;
+        margin-bottom: 22px;
+        font-size: clamp(48px, 7.4vw, 108px);
+        line-height: 0.92;
+        letter-spacing: -0.07em;
+      }
+
+      h2 {
+        font-size: clamp(42px, 5.6vw, 78px);
+      }
+
+      h3 {
+        margin-bottom: 10px;
+        font-size: clamp(20px, 2.2vw, 29px);
+        letter-spacing: -0.035em;
+      }
+
+      .lead {
+        max-width: 760px;
+        color: #cbc5d0;
+        font-size: clamp(17px, 1.8vw, 24px);
+        line-height: 1.55;
+      }
+
+      .hero-layout,
+      .split-layout,
+      .demo-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.72fr);
+        align-items: center;
+        gap: clamp(28px, 5vw, 78px);
+      }
+
+      .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+        padding: 10px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        color: #d6d0dc;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .hero-visual {
+        position: relative;
+        min-height: min(70svh, 720px);
+        overflow: hidden;
+        border: 1px solid rgba(203, 179, 255, 0.25);
+        border-radius: 36px;
+        background: #0d0614;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-visual img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .hero-visual::after {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 55%, rgba(9, 4, 14, 0.76));
+        content: "";
+      }
+
+      .hero-visual-label {
+        position: absolute;
+        right: 22px;
+        bottom: 22px;
+        left: 22px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 18px;
+        background: rgba(16, 11, 21, 0.7);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero-visual-label strong {
+        font-size: 13px;
+      }
+
+      .hero-visual-label span {
+        color: var(--lime);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .statement {
+        max-width: 1080px;
+        margin: 0;
+        font-size: clamp(38px, 6.1vw, 88px);
+        font-weight: 850;
+        line-height: 1.02;
+        letter-spacing: -0.06em;
+      }
+
+      .statement em {
+        color: var(--coral);
+        font-style: normal;
+      }
+
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 42px;
+      }
+
+      .card-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .story-card,
+      .feature-card,
+      .boundary-card {
+        position: relative;
+        min-width: 0;
+        padding: 26px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background:
+          radial-gradient(circle at 100% 0, rgba(158, 145, 255, 0.1), transparent 42%),
+          rgba(33, 31, 42, 0.88);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+      }
+
+      .story-card strong,
+      .feature-card strong {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--lime);
+        font-size: 10px;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .story-card p,
+      .feature-card p,
+      .boundary-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .story-card .big-word {
+        display: block;
+        margin: 4px 0 14px;
+        color: var(--cream);
+        font-size: clamp(27px, 3vw, 42px);
+        font-weight: 850;
+        line-height: 1;
+        letter-spacing: -0.05em;
+        text-transform: none;
+      }
+
+      .timeline {
+        position: relative;
+        display: grid;
+        gap: 14px;
+        margin-top: 34px;
+      }
+
+      .timeline-item {
+        display: grid;
+        grid-template-columns: 54px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 19px;
+        background: rgba(255, 255, 255, 0.035);
+      }
+
+      .timeline-index {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .timeline-item.is-turn .timeline-index {
+        background: var(--coral);
+        color: #311612;
+      }
+
+      .timeline-item.is-answer .timeline-index {
+        background: var(--lime);
+        color: #202513;
+      }
+
+      .timeline-item p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .people-list {
+        display: grid;
+        gap: 13px;
+        margin-top: 30px;
+      }
+
+      .person {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: 15px;
+        align-items: center;
+        padding: 17px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.035);
+      }
+
+      .person-icon {
+        width: 46px;
+        height: 46px;
+        display: grid;
+        place-items: center;
+        border-radius: 15px;
+        background: rgba(216, 255, 114, 0.1);
+        color: var(--lime);
+        font-weight: 900;
+      }
+
+      .person p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .avatar-thesis {
+        position: relative;
+        padding: clamp(28px, 5vw, 62px);
+        overflow: hidden;
+        border: 1px solid rgba(216, 255, 114, 0.18);
+        border-radius: 32px;
+        background:
+          radial-gradient(circle at 88% 10%, rgba(216, 255, 114, 0.15), transparent 34%),
+          linear-gradient(140deg, rgba(158, 145, 255, 0.1), transparent 52%),
+          var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .avatar-thesis blockquote {
+        max-width: 980px;
+        margin: 0;
+        font-size: clamp(38px, 5.5vw, 78px);
+        font-weight: 850;
+        line-height: 1.02;
+        letter-spacing: -0.06em;
+      }
+
+      .avatar-thesis blockquote span {
+        color: var(--lime);
+      }
+
+      .avatar-thesis p {
+        max-width: 740px;
+        margin: 28px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      .architecture {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 40px;
+      }
+
+      .architecture-step {
+        position: relative;
+        min-height: 178px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 19px;
+        background: rgba(33, 31, 42, 0.9);
+      }
+
+      .architecture-step:not(:last-child)::after {
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        z-index: 2;
+        color: var(--lime);
+        font-weight: 900;
+        content: "›";
+        transform: translate(50%, -50%);
+      }
+
+      .architecture-step span {
+        color: var(--lime);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+      }
+
+      .architecture-step strong {
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .architecture-step small {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+
+      .cast-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 32px;
+      }
+
+      .cast-card {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+      }
+
+      .cast-face {
+        width: 66px;
+        height: 66px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 24px;
+        border-radius: 24px;
+        background: var(--lime);
+        color: #202513;
+        font-size: 28px;
+        font-weight: 900;
+        box-shadow: 0 18px 46px rgba(216, 255, 114, 0.16);
+      }
+
+      .cast-card:nth-child(2) .cast-face {
+        background: var(--lavender);
+        color: #211a3c;
+      }
+
+      .cast-card:nth-child(3) .cast-face {
+        background: var(--coral);
+        color: #351713;
+      }
+
+      .cast-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .boundary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 38px;
+      }
+
+      .boundary-card {
+        padding: 28px;
+      }
+
+      .boundary-card.good {
+        border-color: rgba(216, 255, 114, 0.22);
+      }
+
+      .boundary-card.care {
+        border-color: rgba(255, 130, 110, 0.24);
+      }
+
+      .boundary-label {
+        display: inline-flex;
+        margin-bottom: 18px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(216, 255, 114, 0.09);
+        color: var(--lime);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .care .boundary-label {
+        background: rgba(255, 130, 110, 0.09);
+        color: var(--coral);
+      }
+
+      .boundary-card ul {
+        display: grid;
+        gap: 12px;
+        margin: 20px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .boundary-card li {
+        position: relative;
+        padding-left: 20px;
+        color: #d3cdd8;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .boundary-card li::before {
+        position: absolute;
+        top: 0.45em;
+        left: 0;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--lime);
+        content: "";
+      }
+
+      .care li::before {
+        background: var(--coral);
+      }
+
+      .demo-phone {
+        position: relative;
+        width: min(360px, 100%);
+        justify-self: center;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.34);
+        border-radius: 56px;
+        background: linear-gradient(135deg, #918d92, #111013 38%, #5d5960 78%, #17151b);
+        box-shadow: 0 40px 110px rgba(0, 0, 0, 0.56);
+      }
+
+      .demo-screen {
+        position: relative;
+        min-height: min(64svh, 650px);
+        display: grid;
+        align-content: end;
+        overflow: hidden;
+        padding: 24px;
+        border-radius: 49px;
+        background:
+          linear-gradient(180deg, transparent 42%, rgba(10, 7, 13, 0.92)),
+          url("https://food-spirit.vercel.app/food-spirit/sample-banana.jpg") center / cover;
+      }
+
+      .demo-island {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 112px;
+        height: 32px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: #030303;
+      }
+
+      .demo-spirit {
+        position: relative;
+        z-index: 2;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.17);
+        border-radius: 22px;
+        background: rgba(20, 17, 26, 0.82);
+        backdrop-filter: blur(18px);
+      }
+
+      .demo-spirit span {
+        color: var(--lime);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .demo-spirit h3 {
+        margin: 8px 0;
+        font-size: 31px;
+      }
+
+      .demo-spirit p {
+        margin: 0;
+        color: #d0cad5;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .demo-steps {
+        display: grid;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .demo-step {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 13px;
+        align-items: start;
+      }
+
+      .demo-step span {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .demo-step p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .future-panel {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 18px;
+        margin-top: 36px;
+      }
+
+      .future-primary,
+      .future-list {
+        padding: clamp(24px, 4vw, 46px);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--panel);
+      }
+
+      .future-primary {
+        border-color: rgba(216, 255, 114, 0.22);
+        background:
+          radial-gradient(circle at 80% 12%, rgba(216, 255, 114, 0.16), transparent 34%),
+          var(--panel);
+      }
+
+      .future-primary strong {
+        display: block;
+        margin-bottom: 16px;
+        color: var(--lime);
+        font-size: clamp(28px, 3.8vw, 52px);
+        line-height: 1;
+        letter-spacing: -0.05em;
+      }
+
+      .future-primary p,
+      .future-list p {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .future-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+      }
+
+      .future-list h3 {
+        color: var(--cream);
+        font-size: 18px;
+      }
+
+      .final-slide {
+        text-align: center;
+      }
+
+      .final-slide .slide-inner {
+        display: grid;
+        justify-items: center;
+      }
+
+      .final-orb {
+        width: 112px;
+        height: 112px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 34px;
+        border-radius: 45% 55% 50% 50%;
+        background:
+          radial-gradient(circle at 34% 30%, #fbffd6, transparent 14%),
+          linear-gradient(145deg, var(--lime), #80af40);
+        color: #263316;
+        font-size: 38px;
+        box-shadow: 0 0 0 22px rgba(216, 255, 114, 0.05), 0 32px 80px rgba(113, 153, 54, 0.35);
+      }
+
+      .final-slide h2 {
+        max-width: 1080px;
+      }
+
+      .final-slide .lead {
+        max-width: 760px;
+        text-align: center;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 34px;
+      }
+
+      .primary-cta,
+      .secondary-cta {
+        min-height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 0 24px;
+        border-radius: 17px;
+        font-size: 13px;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .primary-cta {
+        background: var(--lime);
+        color: #202513;
+        box-shadow: 0 18px 48px rgba(160, 206, 61, 0.22);
+      }
+
+      .secondary-cta {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--cream);
+      }
+
+      .final-url {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+
+      .deck-controls {
+        position: fixed;
+        right: 30px;
+        bottom: 24px;
+        z-index: 96;
+        display: flex;
+        gap: 8px;
+      }
+
+      .deck-controls button {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: rgba(23, 21, 29, 0.78);
+        color: var(--cream);
+        cursor: pointer;
+        backdrop-filter: blur(14px);
+      }
+
+      .deck-controls button:hover,
+      .deck-controls button:focus-visible {
+        border-color: var(--lime);
+        color: var(--lime);
+      }
+
+      @media (max-width: 980px) {
+        html {
+          scroll-snap-type: none;
+        }
+
+        .slide {
+          min-height: auto;
+          padding-top: 108px;
+          padding-bottom: 70px;
+          scroll-snap-align: none;
+        }
+
+        .hero-layout,
+        .split-layout,
+        .demo-layout,
+        .future-panel {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-visual {
+          min-height: 560px;
+        }
+
+        .card-grid,
+        .cast-row {
+          grid-template-columns: 1fr;
+        }
+
+        .card-grid.two,
+        .boundary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .architecture {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .architecture-step:not(:last-child)::after {
+          display: none;
+        }
+
+        .demo-phone {
+          order: -1;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .deck-header {
+          min-height: 64px;
+          padding: 0 16px;
+        }
+
+        .deck-meta span:not(.live-dot),
+        .deck-nav,
+        .deck-controls {
+          display: none;
+        }
+
+        .slide {
+          padding: 92px 18px 52px;
+        }
+
+        .hero-visual {
+          min-height: 420px;
+          border-radius: 25px;
+        }
+
+        .architecture,
+        .future-list {
+          grid-template-columns: 1fr;
+        }
+
+        .story-card,
+        .feature-card,
+        .boundary-card {
+          padding: 20px;
+        }
+
+        .avatar-thesis {
+          padding: 26px;
+          border-radius: 24px;
+        }
+
+        .demo-screen {
+          min-height: 580px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      @media print {
+        :root {
+          color-scheme: light;
+        }
+
+        html,
+        body {
+          background: #17151d !important;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+
+        .deck-progress,
+        .deck-header,
+        .deck-nav,
+        .deck-controls {
+          display: none !important;
+        }
+
+        .slide {
+          min-height: 100vh;
+          page-break-after: always;
+          break-after: page;
+          padding: 48px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="deck-progress" aria-hidden="true"><span id="deck-progress"></span></div>
+    <header class="deck-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">芽</span>
+        <span>Food Spirit</span>
+      </div>
+      <div class="deck-meta">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span>Perxona Tokyo Hackathon</span>
+        <span id="deck-count">01 / 12</span>
+      </div>
+    </header>
+
+    <nav class="deck-nav" id="deck-nav" aria-label="Storyboard chapters"></nav>
+
+    <main>
+      <section class="slide" id="opening" data-title="Opening">
+        <div class="slide-inner hero-layout">
+          <div>
+            <span class="hero-kicker"><span class="live-dot"></span> Hackathon submission</span>
+            <p class="eyebrow">Project description · A living story for every ingredient</p>
+            <h1>Every food gets a digital life.</h1>
+            <p class="lead">
+              Food Spirit turns a smartphone food photo into an expressive Perxona
+              character that remembers, speaks, and asks to be rescued before it is
+              forgotten.
+            </p>
+          </div>
+          <div class="hero-visual">
+            <img
+              src="https://food-spirit.vercel.app/food-spirit/og.png"
+              alt="Food Spirit key visual showing a photographed avocado becoming an expressive character"
+            />
+            <div class="hero-visual-label">
+              <strong>Photograph it. Awaken it. Rescue it.</strong>
+              <span>Powered by Perxona</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="problem" data-title="The problem">
+        <div class="slide-inner">
+          <p class="slide-number">01 — The problem</p>
+          <p class="eyebrow">Food waste begins with invisibility</p>
+          <p class="statement">
+            Food at the back of a shelf becomes <em>easy to forget</em> long before it
+            becomes impossible to use.
+          </p>
+          <div class="card-grid">
+            <article class="story-card">
+              <strong>The information gap</strong>
+              <span class="big-word">“What is still here?”</span>
+              <p>People lose track of ingredients across the counter, fridge, and freezer.</p>
+            </article>
+            <article class="story-card">
+              <strong>The timing gap</strong>
+              <span class="big-word">“When should I use it?”</span>
+              <p>Dates and storage context are fragmented, uncertain, or never recorded.</p>
+            </article>
+            <article class="story-card">
+              <strong>The motivation gap</strong>
+              <span class="big-word">“Why act now?”</span>
+              <p>Another static notification is easy to dismiss because it carries no relationship.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="journey" data-title="Concept journey">
+        <div class="slide-inner split-layout">
+          <div>
+            <p class="slide-number">02 — How we arrived here</p>
+            <p class="eyebrow">A technical constraint became the concept</p>
+            <h2>We stopped trying to make a banana model.</h2>
+            <p class="lead">
+              The stronger idea was not a photo cutout or an unreliable instant 3D model.
+              It was intelligent casting: give each food the best expressive performer,
+              personality, voice, and emotional state available through Perxona.
+            </p>
+          </div>
+          <div class="timeline">
+            <div class="timeline-item">
+              <span class="timeline-index">01</span>
+              <div>
+                <h3>First thought: photo becomes avatar</h3>
+                <p>Appealing as a headline, but native photo-to-rigged-avatar creation is not part of the reliable public workflow.</p>
+              </div>
+            </div>
+            <div class="timeline-item is-turn">
+              <span class="timeline-index">02</span>
+              <div>
+                <h3>The correction: expression must lead</h3>
+                <p>A photograph inside a frame does not demonstrate Perxona. Voice, face, motion, and personality do.</p>
+              </div>
+            </div>
+            <div class="timeline-item is-answer">
+              <span class="timeline-index">03</span>
+              <div>
+                <h3>The answer: a Food Spirit is cast</h3>
+                <p>The image identifies the ingredient; the app creates its identity; Perxona brings that identity to life.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="built" data-title="What we built">
+        <div class="slide-inner">
+          <p class="slide-number">03 — What did we build?</p>
+          <p class="eyebrow">One complete loop, not a disconnected feature demo</p>
+          <h2>Photo → identity → performance → memory → rescue.</h2>
+          <div class="card-grid">
+            <article class="feature-card">
+              <strong>01 · Discover</strong>
+              <h3>On-device food recognition</h3>
+              <p>Full-width MobileNet V2 proposes visual labels. Perxona AI refines the text result, while the user keeps final control.</p>
+            </article>
+            <article class="feature-card">
+              <strong>02 · Understand</strong>
+              <h3>Condition-aware planning</h3>
+              <p>Food type, condition, and storage produce a transparent useful-by estimate—not a food-safety diagnosis.</p>
+            </article>
+            <article class="feature-card">
+              <strong>03 · Cast</strong>
+              <h3>A performer for each food</h3>
+              <p>Bright foods, earthy greens, dairy, comfort foods, and unknown items are mapped to fitting non-human avatars.</p>
+            </article>
+            <article class="feature-card">
+              <strong>04 · Perform</strong>
+              <h3>Voice, lip-sync, and motion</h3>
+              <p>The Food Spirit introduces itself in first person through a live Perxona scene and expressive performance.</p>
+            </article>
+            <article class="feature-card">
+              <strong>05 · Remember</strong>
+              <h3>A living pantry on the device</h3>
+              <p>The item saves automatically after its hello and remains available after refresh without an account.</p>
+            </article>
+            <article class="feature-card">
+              <strong>06 · Converse</strong>
+              <h3>Pantry-aware text and voice chat</h3>
+              <p>Ask what to cook, which food to use first, or how soon to act. The avatar performs the contextual answer.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="audience" data-title="Who it is for">
+        <div class="slide-inner split-layout">
+          <div>
+            <p class="slide-number">04 — Who is it for?</p>
+            <p class="eyebrow">For people, not inventory managers</p>
+            <h2>Anyone whose kitchen moves faster than their memory.</h2>
+            <p class="lead">
+              Food Spirit is designed for ordinary households that want a lighter,
+              more human way to remember ingredients—without maintaining a spreadsheet
+              or learning a complex pantry system.
+            </p>
+          </div>
+          <div class="people-list">
+            <div class="person">
+              <span class="person-icon">01</span>
+              <div><h3>Busy households</h3><p>People juggling work, errands, and changing meal plans.</p></div>
+            </div>
+            <div class="person">
+              <span class="person-icon">02</span>
+              <div><h3>Students and solo residents</h3><p>Small kitchens where one forgotten ingredient can become most of the weekly waste.</p></div>
+            </div>
+            <div class="person">
+              <span class="person-icon">03</span>
+              <div><h3>Families and caregivers</h3><p>Shared food, different schedules, and no single person holding the whole pantry in memory.</p></div>
+            </div>
+            <div class="person">
+              <span class="person-icon">04</span>
+              <div><h3>Visual and conversational thinkers</h3><p>People more likely to respond to a character and conversation than a database row.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="perxona" data-title="Why Perxona">
+        <div class="slide-inner">
+          <p class="slide-number">05 — Why Perxona?</p>
+          <p class="eyebrow">The avatar is the behavioral interface</p>
+          <div class="avatar-thesis">
+            <blockquote>
+              Without Perxona, this is a food scanner. <span>With Perxona, the food can ask not to be forgotten.</span>
+            </blockquote>
+            <p>
+              Perxona supplies the emotional moment: a visible body, voice, facial
+              expression, lip-sync, motion, scene, and conversational presence. The
+              reminder changes from “Banana: four days” to “I am Bana Nori—what can we
+              make before I fade into the back of the shelf?”
+            </p>
+          </div>
+          <div class="card-grid">
+            <article class="story-card"><strong>Expression</strong><span class="big-word">Seen</span><p>Facial and body behavior communicates urgency and personality before the user reads a paragraph.</p></article>
+            <article class="story-card"><strong>Voice</strong><span class="big-word">Heard</span><p>First-person speech turns abstract shelf life into an immediate relationship.</p></article>
+            <article class="story-card"><strong>Conversation</strong><span class="big-word">Useful</span><p>The character can reason over the current food and the foods already remembered in the pantry.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="architecture" data-title="How it works">
+        <div class="slide-inner">
+          <p class="slide-number">06 — How it works</p>
+          <p class="eyebrow">A privacy-conscious, hackathon-finishable architecture</p>
+          <h2>Intelligence is split where it makes sense.</h2>
+          <div class="architecture" aria-label="Food Spirit technical flow">
+            <div class="architecture-step"><span>01</span><strong>Smartphone photo</strong><small>Camera or photo library input</small></div>
+            <div class="architecture-step"><span>02</span><strong>Local visual model</strong><small>MobileNet V2 runs in the browser</small></div>
+            <div class="architecture-step"><span>03</span><strong>Perxona refinement</strong><small>Text candidates are normalized</small></div>
+            <div class="architecture-step"><span>04</span><strong>Food state engine</strong><small>Identity, condition, storage, use window</small></div>
+            <div class="architecture-step"><span>05</span><strong>Perxona casting</strong><small>Avatar, scene, voice, expression, motion</small></div>
+            <div class="architecture-step"><span>06</span><strong>Living pantry</strong><small>Local memory plus pantry-aware chat</small></div>
+          </div>
+          <div class="card-grid two">
+            <article class="feature-card">
+              <strong>Browser + device</strong>
+              <h3>Photo processing and pantry memory</h3>
+              <p>The prototype keeps photo handling and the complete pantry record in the user's browser.</p>
+            </article>
+            <article class="feature-card">
+              <strong>Perxona Connect</strong>
+              <h3>Performance and contextual conversation</h3>
+              <p>The server securely mints the Connect token; the widget performs; chatbot endpoints answer using text context.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="unique" data-title="What makes it unique">
+        <div class="slide-inner">
+          <p class="slide-number">07 — What makes it unique?</p>
+          <p class="eyebrow">Intelligent casting instead of pretending to generate a model</p>
+          <h2>Each food receives a role—not just a label.</h2>
+          <p class="lead">
+            Food Spirit turns one reliable set of expressive performers into many food
+            identities. The cast changes with the ingredient; the personality and
+            message change with its condition; only one live performer is staged at a
+            time for demo reliability.
+          </p>
+          <div class="cast-row">
+            <article class="cast-card"><div class="cast-face">◉</div><h3>EmojiBoy</h3><p>Bright, playful foods such as banana, citrus, and colorful fruit.</p></article>
+            <article class="cast-card"><div class="cast-face">芽</div><h3>Mushroom</h3><p>Earthy greens, vegetables, herbs, and produce with a grounded character.</p></article>
+            <article class="cast-card"><div class="cast-face">✦</div><h3>Meeks</h3><p>Comfort foods, dairy, leftovers, and flexible fallback roles.</p></article>
+          </div>
+          <div class="card-grid two">
+            <article class="feature-card"><strong>Dynamic identity</strong><h3>A name and first-person story</h3><p>“Banana” becomes Bana Nori—a sunny character with a use window, place, and reason to act.</p></article>
+            <article class="feature-card"><strong>Dynamic behavior</strong><h3>State can become emotion</h3><p>Fresh can feel confident; ripe can feel ready; use-soon can become concerned without presenting fear as safety advice.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="trust" data-title="Trust and safety">
+        <div class="slide-inner">
+          <p class="slide-number">08 — Trust, privacy, and honest boundaries</p>
+          <p class="eyebrow">Delight should not hide what the system knows</p>
+          <h2>Human correction remains part of the loop.</h2>
+          <div class="boundary-grid">
+            <article class="boundary-card good">
+              <span class="boundary-label">Stays on the device</span>
+              <h3>Private local memory</h3>
+              <ul>
+                <li>The selected photo and thumbnail record remain in the browser.</li>
+                <li>The living pantry uses browser local storage—no account required.</li>
+                <li>The user can correct a label and remove any saved item.</li>
+              </ul>
+            </article>
+            <article class="boundary-card care">
+              <span class="boundary-label">Clearly disclosed</span>
+              <h3>Planning guidance, not diagnosis</h3>
+              <ul>
+                <li>Useful-by dates are transparent planning estimates.</li>
+                <li>The app asks users to check packaging, smell, and texture.</li>
+                <li>Chat sends the question, food details, and pantry summaries to Perxona—not the photo.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="demo" data-title="Demo story">
+        <div class="slide-inner demo-layout">
+          <div>
+            <p class="slide-number">09 — The two-minute demo story</p>
+            <p class="eyebrow">Meet Bana Nori</p>
+            <h2>A banana becomes a reason to act.</h2>
+            <div class="demo-steps">
+              <div class="demo-step"><span>01</span><div><h3>Photograph</h3><p>The browser recognizes a banana and the user confirms that it is ripe and stored in the fridge.</p></div></div>
+              <div class="demo-step"><span>02</span><div><h3>Awaken</h3><p>Food Spirit casts EmojiBoy and Perxona performs Bana Nori's first-person introduction.</p></div></div>
+              <div class="demo-step"><span>03</span><div><h3>Remember</h3><p>The food saves automatically with its use window and survives page refresh.</p></div></div>
+              <div class="demo-step"><span>04</span><div><h3>Rescue</h3><p>Ask, “What can I make using my pantry?” The avatar responds with a contextual meal idea.</p></div></div>
+            </div>
+          </div>
+          <div class="demo-phone" aria-label="Bana Nori demonstration mockup">
+            <div class="demo-screen">
+              <span class="demo-island" aria-hidden="true"></span>
+              <div class="demo-spirit">
+                <span>Now meeting</span>
+                <h3>Bana Nori</h3>
+                <p>Sunny, sweet, and ready to help. Plan to use me within four days.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="future" data-title="Vision">
+        <div class="slide-inner">
+          <p class="slide-number">10 — Where this can go next</p>
+          <p class="eyebrow">From one voice to a household food ecosystem</p>
+          <h2>The Fridge Council.</h2>
+          <p class="lead">
+            The MVP proves one reliable active performer. The larger vision lets Food
+            Spirits take turns advocating for a shared rescue meal—prioritized by
+            condition, compatibility, and household intent.
+          </p>
+          <div class="future-panel">
+            <article class="future-primary">
+              <strong>“Use us together tonight.”</strong>
+              <p>A banana, milk, and berries propose a smoothie because it rescues the most time-sensitive combination.</p>
+            </article>
+            <div class="future-list">
+              <div><h3>Lifecycle emotion</h3><p>Avatar expression changes as the planning window gets shorter.</p></div>
+              <div><h3>Meal negotiation</h3><p>Characters explain which combination produces the most useful rescue.</p></div>
+              <div><h3>Shared household memory</h3><p>Optional sync can coordinate food across people and devices.</p></div>
+              <div><h3>Impact measurement</h3><p>Track rescued items and repeated habits without reducing the experience to a spreadsheet.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" id="close" data-title="Try Food Spirit">
+        <div class="slide-inner final-slide">
+          <div class="final-orb" aria-hidden="true">✦</div>
+          <p class="slide-number">11 — Live experience</p>
+          <p class="eyebrow">Photograph it. Awaken it. Rescue it.</p>
+          <h2>Your food has something to say.</h2>
+          <p class="lead">
+            Open Food Spirit, photograph an ingredient, meet its expressive Perxona
+            character, and ask what meal can rescue it.
+          </p>
+          <div class="cta-row">
+            <a class="primary-cta" href="https://food-spirit.vercel.app" target="_blank" rel="noreferrer">
+              Launch the live app <span aria-hidden="true">→</span>
+            </a>
+            <a class="secondary-cta" href="https://github.com/ma2e0/perxona-hackathon" target="_blank" rel="noreferrer">
+              View source
+            </a>
+          </div>
+          <p class="final-url">https://food-spirit.vercel.app</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="deck-controls" aria-label="Presentation controls">
+      <button id="previous-slide" type="button" aria-label="Previous chapter">↑</button>
+      <button id="next-slide" type="button" aria-label="Next chapter">↓</button>
+    </div>
+
+    <script>
+      (() => {
+        const slides = [...document.querySelectorAll(".slide")];
+        const nav = document.querySelector("#deck-nav");
+        const count = document.querySelector("#deck-count");
+        const progress = document.querySelector("#deck-progress");
+        let activeIndex = 0;
+
+        const buttons = slides.map((slide, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("aria-label", `Go to ${slide.dataset.title}`);
+          button.addEventListener("click", () => slide.scrollIntoView({ behavior: "smooth" }));
+          nav.append(button);
+          return button;
+        });
+
+        function setActive(index) {
+          activeIndex = Math.max(0, Math.min(index, slides.length - 1));
+          buttons.forEach((button, buttonIndex) => {
+            button.setAttribute("aria-current", String(buttonIndex === activeIndex));
+          });
+          count.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+          progress.style.width = `${((activeIndex + 1) / slides.length) * 100}%`;
+          document.title = `${slides[activeIndex].dataset.title} — Food Spirit Storyboard`;
+        }
+
+        function goTo(index) {
+          slides[Math.max(0, Math.min(index, slides.length - 1))].scrollIntoView({ behavior: "smooth" });
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const visible = entries
+              .filter((entry) => entry.isIntersecting)
+              .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (visible) setActive(slides.indexOf(visible.target));
+          },
+          { threshold: [0.45, 0.7] },
+        );
+        slides.forEach((slide) => observer.observe(slide));
+
+        document.querySelector("#previous-slide").addEventListener("click", () => goTo(activeIndex - 1));
+        document.querySelector("#next-slide").addEventListener("click", () => goTo(activeIndex + 1));
+
+        document.addEventListener("keydown", (event) => {
+          if (["ArrowDown", "PageDown", " "].includes(event.key)) {
+            event.preventDefault();
+            goTo(activeIndex + 1);
+          } else if (["ArrowUp", "PageUp"].includes(event.key)) {
+            event.preventDefault();
+            goTo(activeIndex - 1);
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            goTo(0);
+          } else if (event.key === "End") {
+            event.preventDefault();
+            goTo(slides.length - 1);
+          }
+        });
+
+        setActive(0);
+      })();
+    </script>
+  </body>
+</html>

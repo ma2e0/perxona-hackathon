@@ -133,4 +133,6 @@ app keeps one active food presenter at a time for reliable performance.
 
 - Source: https://github.com/ma2e0/perxona-hackathon
 - Live demo: https://food-spirit.vercel.app
+- HTML storyboard: `public/Food-Spirit-Submission-Storyboard.html`
+- Hosted storyboard: https://food-spirit.vercel.app/Food-Spirit-Submission-Storyboard.html
 
