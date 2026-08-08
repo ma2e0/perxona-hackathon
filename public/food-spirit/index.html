@@ -105,8 +105,8 @@
             <div class="step-heading">
               <span>01</span>
               <div>
-                <strong>Photograph your food</strong>
-                <small>Camera or photo library</small>
+                <strong>Photograph and discover</strong>
+                <small>Recognition begins automatically</small>
               </div>
             </div>
 
@@ -126,18 +126,36 @@
               <span class="replace-photo" id="replace-photo" hidden>
                 Choose another photo
               </span>
+              <span class="recognition-overlay" id="recognition-overlay" hidden>
+                <span class="recognition-orb" aria-hidden="true"></span>
+                <strong id="recognition-title">Reading your photo</strong>
+                <small id="recognition-detail">
+                  Private on-device vision is finding the strongest food matches.
+                </small>
+              </span>
             </label>
 
             <div class="capture-actions">
-              <button class="primary-button" id="analyze-button" disabled>
-                <span>Discover its spirit</span>
-                <span aria-hidden="true">→</span>
-              </button>
               <button class="sample-button" id="sample-button" type="button">
                 Try a sample banana
               </button>
+              <button
+                class="retry-recognition-button"
+                id="analyze-button"
+                type="button"
+                hidden
+              >
+                Retry recognition
+              </button>
             </div>
-            <p class="inline-status" id="analysis-status" role="status"></p>
+            <div class="recognition-status-row">
+              <p class="inline-status" id="analysis-status" role="status">
+                Choose a photo and Food Spirit will recognize it automatically.
+              </p>
+              <span class="ai-refinement-pill" id="ai-refinement-pill" hidden>
+                Perxona AI refined
+              </span>
+            </div>
 
             <section class="analysis-card" id="analysis-card" hidden>
               <div class="result-heading">
@@ -151,7 +169,10 @@
               <label class="field">
                 <span>What food is this?</span>
                 <input id="food-name" type="text" autocomplete="off" />
-                <small>You can correct the on-device recognition.</small>
+                <small>
+                  On-device vision gives the first match; Perxona AI normalizes
+                  the label. You can always correct it.
+                </small>
               </label>
 
               <div class="field-row">
@@ -203,94 +224,137 @@
               <span class="stage-status" id="presenter-status">Waiting for a photo</span>
             </div>
 
-            <div class="presenter-frame">
-              <sv-presenter id="presenter" hidden></sv-presenter>
-              <div class="stage-placeholder" id="stage-placeholder">
-                <div class="spirit-seed" aria-hidden="true">
-                  <span>✦</span>
-                </div>
-                <h2>A voice is waiting inside.</h2>
-                <p>Your expressive avatar will appear here after recognition.</p>
-              </div>
-            </div>
-
-            <div class="speech-card" id="speech-card" hidden>
-              <p class="speech-label" id="speech-label">Mori says</p>
-              <blockquote id="speech-text"></blockquote>
-              <div class="speech-actions">
-                <button class="secondary-button" id="replay-button">
-                  Replay voice
-                </button>
-                <button class="secondary-button strong" id="save-button">
-                  Save privately on this device
-                </button>
-              </div>
-
-              <section class="conversation-panel" aria-labelledby="conversation-title">
-                <div class="conversation-heading">
-                  <div>
-                    <p class="eyebrow">Live conversation</p>
-                    <h3 id="conversation-title">Talk with your Food Spirit</h3>
+            <div class="live-console">
+              <div class="avatar-device" aria-label="Food Spirit mobile avatar display">
+                <div class="device-speaker" aria-hidden="true"></div>
+                <div class="device-screen">
+                  <div class="device-statusbar" aria-hidden="true">
+                    <span>Food Spirit</span>
+                    <span>● Live</span>
                   </div>
-                  <span class="conversation-mode">Voice + text</span>
+                  <div class="presenter-frame">
+                    <sv-presenter id="presenter" hidden></sv-presenter>
+                    <div class="stage-placeholder" id="stage-placeholder">
+                      <div class="spirit-seed" aria-hidden="true">
+                        <span>✦</span>
+                      </div>
+                      <h2>A voice is waiting inside.</h2>
+                      <p>Your expressive avatar will appear here after recognition.</p>
+                    </div>
+                  </div>
+                  <div class="device-caption">
+                    <span>Now meeting</span>
+                    <strong id="device-spirit-name">Your Food Spirit</strong>
+                  </div>
                 </div>
+                <div class="device-homebar" aria-hidden="true"></div>
+              </div>
 
-                <div
-                  class="conversation-log"
-                  id="conversation-log"
-                  aria-live="polite"
-                  aria-label="Conversation with your Food Spirit"
-                ></div>
+              <div class="speech-card" id="speech-card" hidden>
+                <button
+                  class="chat-sheet-handle"
+                  id="chat-sheet-handle"
+                  type="button"
+                  aria-expanded="true"
+                  aria-controls="chat-dock-scroll"
+                  aria-label="Show or hide conversation"
+                >
+                  <span class="sheet-grip" aria-hidden="true"></span>
+                  <span id="chat-sheet-label">Conversation</span>
+                  <span class="sheet-chevron" aria-hidden="true">⌄</span>
+                </button>
 
-                <div class="prompt-chips" aria-label="Suggested questions">
-                  <button type="button" data-prompt="What can I make with you tonight?">
-                    What can I make?
-                  </button>
-                  <button type="button" data-prompt="How soon should I use you?">
-                    How soon?
-                  </button>
+                <div class="chat-dock-scroll" id="chat-dock-scroll">
+                  <div class="chat-dock-header">
+                    <div>
+                      <p class="eyebrow">Your living conversation</p>
+                      <h2>Talk, plan, rescue.</h2>
+                    </div>
+                    <span class="conversation-mode">Voice + text</span>
+                  </div>
+
+                  <div class="spirit-intro-card">
+                    <p class="speech-label" id="speech-label">Mori says</p>
+                    <blockquote id="speech-text"></blockquote>
+                    <div class="speech-actions">
+                      <button class="secondary-button" id="replay-button">
+                        Replay voice
+                      </button>
+                      <button class="secondary-button strong" id="save-button">
+                        Save on this device
+                      </button>
+                    </div>
+                  </div>
+
+                  <section class="conversation-panel" aria-labelledby="conversation-title">
+                    <div class="conversation-heading">
+                      <div>
+                        <p class="eyebrow">Live with Perxona</p>
+                        <h3 id="conversation-title">Talk with your Food Spirit</h3>
+                      </div>
+                    </div>
+
+                    <div
+                      class="conversation-log"
+                      id="conversation-log"
+                      aria-live="polite"
+                      aria-label="Conversation with your Food Spirit"
+                    ></div>
+
+                    <div class="prompt-chips" aria-label="Suggested questions">
+                      <button type="button" data-prompt="What can I make with you tonight?">
+                        What can I make?
+                      </button>
+                      <button type="button" data-prompt="What meal can I make using my saved pantry?">
+                        Use my pantry
+                      </button>
+                      <button type="button" data-prompt="How soon should I use you?">
+                        How soon?
+                      </button>
+                    </div>
+
+                    <form class="conversation-form" id="conversation-form">
+                      <label class="sr-only" for="conversation-input">
+                        Ask your Food Spirit
+                      </label>
+                      <input
+                        id="conversation-input"
+                        type="text"
+                        maxlength="240"
+                        autocomplete="off"
+                        placeholder="Ask your Food Spirit something..."
+                      />
+                      <button class="send-button" id="conversation-send" type="submit">
+                        Send
+                      </button>
+                      <button
+                        class="voice-button"
+                        id="voice-button"
+                        type="button"
+                        aria-pressed="false"
+                      >
+                        <span class="voice-icon" aria-hidden="true">🎙</span>
+                        <span class="voice-wave" aria-hidden="true">
+                          <i></i><i></i><i></i>
+                        </span>
+                        <span id="voice-button-label">Talk</span>
+                      </button>
+                    </form>
+                    <p class="conversation-status" id="conversation-status" role="status">
+                      Type a question, or tap Talk, speak, then tap Done.
+                    </p>
+                    <p class="conversation-privacy">
+                      Saved pantry details and your question are sent to Perxona.
+                      Photos stay on this device.
+                    </p>
+                  </section>
+
+                  <p class="device-note">
+                    Pantry items stay on this device. Remove any saved item whenever
+                    you like.
+                  </p>
                 </div>
-
-                <form class="conversation-form" id="conversation-form">
-                  <label class="sr-only" for="conversation-input">
-                    Ask your Food Spirit
-                  </label>
-                  <input
-                    id="conversation-input"
-                    type="text"
-                    maxlength="240"
-                    autocomplete="off"
-                    placeholder="Ask your Food Spirit something..."
-                  />
-                  <button class="send-button" id="conversation-send" type="submit">
-                    Send
-                  </button>
-                  <button
-                    class="voice-button"
-                    id="voice-button"
-                    type="button"
-                    aria-pressed="false"
-                  >
-                    <span class="voice-icon" aria-hidden="true">🎙</span>
-                    <span class="voice-wave" aria-hidden="true">
-                      <i></i><i></i><i></i>
-                    </span>
-                    <span id="voice-button-label">Talk</span>
-                  </button>
-                </form>
-                <p class="conversation-status" id="conversation-status" role="status">
-                  Type a question, or tap Talk, speak, then tap Done.
-                </p>
-                <p class="conversation-privacy">
-                  Voice recognition uses your browser's speech service. The
-                  transcript is sent to Perxona to generate the reply.
-                </p>
-              </section>
-
-              <p class="device-note">
-                Photos and pantry items stay on this device. Remove any saved
-                item whenever you like.
-              </p>
+              </div>
             </div>
           </aside>
         </section>
