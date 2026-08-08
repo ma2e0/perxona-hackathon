@@ -1405,6 +1405,9 @@ function renderInventory() {
   state.inventory.forEach((item) => {
     const card = document.createElement("article");
     card.className = "inventory-item";
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Awaken ${item.spirit || item.food}`);
 
     const image = document.createElement("img");
     image.className = "inventory-thumb";
@@ -1425,10 +1428,18 @@ function renderInventory() {
     remove.type = "button";
     remove.textContent = "×";
     remove.setAttribute("aria-label", `Remove ${item.food}`);
-    remove.addEventListener("click", () => {
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
       state.inventory = state.inventory.filter((entry) => entry.id !== item.id);
       persistInventory();
       renderInventory();
+    });
+
+    card.addEventListener("click", () => restoreSavedSpirit(item));
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      restoreSavedSpirit(item);
     });
 
     card.append(image, copy, remove);
@@ -1452,25 +1463,30 @@ function renderAvatarFridge() {
     const label = document.createElement("span");
     label.textContent = item.food;
     button.append(image, label);
-    button.addEventListener("click", async () => {
-      await els.presenter.resumeAudioPlayback?.();
-      state.profileKey = item.profileKey || profileForText(item.food);
-      state.captureId = item.captureId || crypto.randomUUID();
-      state.photoDataUrl = item.photo;
-      els.foodName.value = item.food;
-      els.storage.value = item.storageKey || "fridge";
-      els.condition.value = item.conditionKey || "fresh";
-      castAvatarForProfile(state.profileKey);
-      updateEstimate();
-      createPerformance();
-      resetConversation();
-      els.avatarFridge.hidden = true;
-      els.liveConsole.hidden = false;
-      els.avatarCloseButton.hidden = false;
-      await awakenSpirit();
-    });
+    button.addEventListener("click", () => restoreSavedSpirit(item));
     els.fridgeFoodGrid.append(button);
   });
+}
+
+function restoreSavedSpirit(item) {
+  // Restore the visible stage synchronously so the click always has feedback,
+  // even if audio unlock or Perxona initialization later needs attention.
+  els.avatarFridge.hidden = true;
+  els.liveConsole.hidden = false;
+  els.avatarCloseButton.hidden = false;
+  els.presenterStatus.textContent = `Reawakening ${item.spirit || item.food}...`;
+
+  state.profileKey = item.profileKey || profileForText(item.food);
+  state.captureId = item.captureId || crypto.randomUUID();
+  state.photoDataUrl = item.photo;
+  els.foodName.value = item.food;
+  els.storage.value = item.storageKey || "fridge";
+  els.condition.value = item.conditionKey || "fresh";
+  castAvatarForProfile(state.profileKey);
+  updateEstimate();
+  createPerformance();
+  resetConversation();
+  void awakenSpirit();
 }
 
 function closeAvatarStage() {
