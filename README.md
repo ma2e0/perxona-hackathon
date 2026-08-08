@@ -23,13 +23,29 @@ The MVP now includes:
 - freshness and use-by estimation based on food, condition, and storage
 - live Perxona avatar, scene, voice, emotion, and compatible motion selection
 - a first-person Food Spirit performance with replay
+- multi-turn text chat backed by a dedicated Perxona chatbot
+- push-to-talk browser speech recognition with automatic text fallback
 - a local, browser-only pantry inventory with compressed photo thumbnails
 - a clear food-safety disclaimer and explicit compost/share/freeze/use-soon guidance
 
-The first tap on **Meet my Food Spirit** also unlocks browser audio, so keep that
+The first tap on **Awaken this Food Spirit** also unlocks browser audio, so keep that
 button as the main demo action. Photo-to-native-3D-avatar conversion remains a
 stretch goal; the reliable demo casts each recognized food through an expressive
 Perxona performer.
+
+## Current casting logic
+
+Food Spirit loads the live asset catalogs from the connected Perxona account.
+It prefers an avatar whose name contains `female_food` or `mushroom`, and a
+scene whose name contains `food_advisor` or `food`; if no preferred name is
+available, it uses the first compatible catalog item. Each food profile requests
+a matching voice tone, while the selected avatar's motion catalog is searched
+for `lively`, `extend`, or `lean`. The first compatible item is the fallback in
+each case.
+
+The recognized food changes the spirit identity, voice preference, dialogue,
+freshness behavior, and motion. It does not generate a new 3D model from the
+photo. One active performer is deliberately reused for a reliable live demo.
 
 ## Foundation
 

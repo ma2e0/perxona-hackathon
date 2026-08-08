@@ -179,8 +179,68 @@
                   Save privately on this device
                 </button>
               </div>
+
+              <section class="conversation-panel" aria-labelledby="conversation-title">
+                <div class="conversation-heading">
+                  <div>
+                    <p class="eyebrow">Live conversation</p>
+                    <h3 id="conversation-title">Talk with your Food Spirit</h3>
+                  </div>
+                  <span class="conversation-mode">Voice + text</span>
+                </div>
+
+                <div
+                  class="conversation-log"
+                  id="conversation-log"
+                  aria-live="polite"
+                  aria-label="Conversation with your Food Spirit"
+                ></div>
+
+                <div class="prompt-chips" aria-label="Suggested questions">
+                  <button type="button" data-prompt="What can I make with you tonight?">
+                    What can I make?
+                  </button>
+                  <button type="button" data-prompt="How soon should I use you?">
+                    How soon?
+                  </button>
+                </div>
+
+                <form class="conversation-form" id="conversation-form">
+                  <label class="sr-only" for="conversation-input">
+                    Ask your Food Spirit
+                  </label>
+                  <input
+                    id="conversation-input"
+                    type="text"
+                    maxlength="240"
+                    autocomplete="off"
+                    placeholder="Ask your Food Spirit something..."
+                  />
+                  <button class="send-button" id="conversation-send" type="submit">
+                    Send
+                  </button>
+                  <button
+                    class="voice-button"
+                    id="voice-button"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span aria-hidden="true">🎙</span>
+                    <span id="voice-button-label">Talk</span>
+                  </button>
+                </form>
+                <p class="conversation-status" id="conversation-status" role="status">
+                  Ask by text, or tap Talk and allow microphone access.
+                </p>
+                <p class="conversation-privacy">
+                  Voice recognition uses your browser's speech service. The
+                  transcript is sent to Perxona to generate the reply.
+                </p>
+              </section>
+
               <p class="device-note">
-                Nothing is uploaded. Remove any saved item whenever you like.
+                Photos and pantry items stay on this device. Remove any saved
+                item whenever you like.
               </p>
             </div>
           </aside>

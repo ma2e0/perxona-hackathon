@@ -20,3 +20,6 @@ Food Spirit was implemented during the Perxona Tokyo Hackathon on August 8,
 - Vercel production alias returns 503 for shared Perxona token issuance; the
   revocable judge preview keeps the full integration enabled
 - Hosted Perxona presenter was aligned with the account's Asia API region
+- Dedicated Perxona chatbot returned a food-state-aware banana rescue answer
+- Text conversation, push-to-talk recognition, spoken avatar replies, and a
+  deterministic timeout fallback were added to the Food Spirit stage

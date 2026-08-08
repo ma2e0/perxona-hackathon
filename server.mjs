@@ -48,6 +48,8 @@ const fixedPresenterTarget = hasCompletePresenterTarget
 // through the same upstream account; there is no per-user login.
 const CONNECT_EMAIL = process.env.PERXONA_CONNECT_EMAIL;
 const CONNECT_PASSWORD = process.env.PERXONA_CONNECT_PASSWORD;
+const FOOD_SPIRIT_CHATBOT_ID =
+  process.env.FOOD_SPIRIT_CHATBOT_ID || "01KZFTCA9W3A7NBJ31PS0Q7XPB";
 
 if (hasConfiguredPresenterTarget && !hasCompletePresenterTarget) {
   console.error(
@@ -487,6 +489,7 @@ app.get("/api/config", (_req, res) => {
     presenterUrl: PRESENTER_URL,
     defaults: DEMO_DEFAULTS,
     fixedTarget: fixedPresenterTarget,
+    foodSpiritChatbotId: FOOD_SPIRIT_CHATBOT_ID,
   });
 });
 
