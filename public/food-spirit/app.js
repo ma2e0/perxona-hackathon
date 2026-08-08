@@ -143,6 +143,24 @@ const STORAGE_LABELS = {
   freezer: "in the freezer",
 };
 
+const FOOD_RESCUE_IDEAS = {
+  banana: "a banana milk smoothie or warm banana toast",
+  apple: "a quick apple-oat bowl or sliced apple toast",
+  citrus: "a bright citrus dressing or fruit soda",
+  berries: "a berry yogurt cup or freezer smoothie pack",
+  tomato: "a fast tomato pasta or toasted tomato sandwich",
+  leafy: "a green stir-fry or soup",
+  carrot: "a carrot ribbon salad or quick curry",
+  broccoli: "a garlic broccoli stir-fry or creamy soup",
+  mushroom: "a mushroom toast or simple butter-soy stir-fry",
+  bread: "crispy croutons, French toast, or breadcrumbs",
+  cheese: "a grilled cheese toast or vegetable gratin",
+  milk: "a smoothie, pancake batter, or creamy soup",
+  egg: "a vegetable omelet or fried-rice rescue",
+  meal: "a reheated lunch bowl with one fresh topping",
+  food: "a simple soup, stir-fry, or freezer-ready meal",
+};
+
 const els = {
   connectionPill: document.querySelector("#connection-pill"),
   connectionLabel: document.querySelector("#connection-label"),
@@ -170,6 +188,15 @@ const els = {
   speechText: document.querySelector("#speech-text"),
   replayButton: document.querySelector("#replay-button"),
   saveButton: document.querySelector("#save-button"),
+  conversationTitle: document.querySelector("#conversation-title"),
+  conversationLog: document.querySelector("#conversation-log"),
+  conversationForm: document.querySelector("#conversation-form"),
+  conversationInput: document.querySelector("#conversation-input"),
+  conversationSend: document.querySelector("#conversation-send"),
+  conversationStatus: document.querySelector("#conversation-status"),
+  voiceButton: document.querySelector("#voice-button"),
+  voiceButtonLabel: document.querySelector("#voice-button-label"),
+  promptButtons: document.querySelectorAll("[data-prompt]"),
   inventoryGrid: document.querySelector("#inventory-grid"),
   inventoryCount: document.querySelector("#inventory-count"),
   emptyInventory: document.querySelector("#empty-inventory"),
@@ -185,6 +212,7 @@ const state = {
   estimatedDate: new Date(),
   presenterReady: false,
   presenterInitialized: false,
+  presenterInitializationPromise: null,
   isRefreshingToken: false,
   performanceText: "",
   displayText: "",
@@ -193,6 +221,11 @@ const state = {
   voice: null,
   voices: [],
   motion: null,
+  chatbotId: null,
+  chatHistory: [],
+  isReplying: false,
+  recognition: null,
+  isListening: false,
   inventory: loadInventory(),
 };
 
@@ -243,6 +276,7 @@ function selectByName(items, fragments) {
 async function preparePerxona() {
   try {
     const config = await request("/api/config");
+    state.chatbotId = config.foodSpiritChatbotId ?? null;
     await loadScript(config.presenterUrl);
     await customElements.whenDefined("sv-presenter");
 
@@ -355,6 +389,8 @@ function createPerformance() {
 
   els.speechLabel.textContent = `${profile.spirit} says`;
   els.speechText.textContent = state.displayText;
+  els.conversationTitle.textContent = `Talk with ${profile.spirit}`;
+  els.conversationInput.placeholder = `Ask ${profile.spirit} something...`;
 }
 
 async function analyzePhoto() {
@@ -397,15 +433,21 @@ async function initializePresenter() {
   if (!state.avatar || !state.scene || !state.voice) {
     throw new Error("Perxona assets are not ready yet.");
   }
-
-  const { connect_token: token } = await request("/api/connect-token");
-  await els.presenter.initialize(token, {
-    avatarId: state.avatar.id,
-    sceneId: state.scene.id,
-    voiceId: state.voice.id,
-  });
-  state.presenterInitialized = true;
-  await waitForPresenterReady();
+  if (!state.presenterInitializationPromise) {
+    state.presenterInitializationPromise = (async () => {
+      const { connect_token: token } = await request("/api/connect-token");
+      await els.presenter.initialize(token, {
+        avatarId: state.avatar.id,
+        sceneId: state.scene.id,
+        voiceId: state.voice.id,
+      });
+      state.presenterInitialized = true;
+      await waitForPresenterReady();
+    })().finally(() => {
+      state.presenterInitializationPromise = null;
+    });
+  }
+  await state.presenterInitializationPromise;
 }
 
 function waitForPresenterReady(timeoutMs = 30000) {
@@ -455,6 +497,238 @@ async function awakenSpirit() {
     els.presenterStatus.textContent = error.message;
     els.awakenButton.disabled = false;
   }
+}
+
+function appendConversationMessage(role, text) {
+  const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  const message = document.createElement("div");
+  message.className = `conversation-message ${role}`;
+
+  const label = document.createElement("strong");
+  label.textContent =
+    role === "user" ? "You" : role === "error" ? "Notice" : profile.spirit;
+  const copy = document.createElement("p");
+  copy.textContent = text;
+  message.append(label, copy);
+  els.conversationLog.append(message);
+  els.conversationLog.scrollTop = els.conversationLog.scrollHeight;
+}
+
+function resetConversation() {
+  state.chatHistory = [];
+  state.isReplying = false;
+  els.conversationLog.replaceChildren();
+  els.conversationInput.value = "";
+  els.conversationInput.disabled = false;
+  els.conversationSend.disabled = false;
+  els.voiceButton.disabled = !state.recognition;
+  els.conversationStatus.textContent = state.recognition
+    ? "Ask by text, or tap Talk and allow microphone access."
+    : "Voice input is unavailable in this browser. Text conversation still works.";
+}
+
+function currentFoodContext(question) {
+  const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  const foodName = els.foodName.value.trim() || profile.label;
+  const condition =
+    els.condition.options[els.condition.selectedIndex]?.textContent ??
+    els.condition.value;
+  return [
+    `Food: ${foodName}.`,
+    `Spirit name: ${profile.spirit}.`,
+    `Personality: ${profile.opening}`,
+    `Condition: ${condition}.`,
+    `Storage: ${STORAGE_LABELS[els.storage.value]}.`,
+    `Estimated planning window: ${state.estimatedDays} ${state.estimatedDays === 1 ? "day" : "days"}, before ${formatDate(state.estimatedDate)}.`,
+    `User question: ${question}`,
+  ].join(" ");
+}
+
+function fallbackFoodReply(question) {
+  const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  const foodName = els.foodName.value.trim() || profile.label;
+  const normalized = question.toLowerCase();
+  const idea = FOOD_RESCUE_IDEAS[state.profileKey] ?? FOOD_RESCUE_IDEAS.food;
+
+  if (
+    ["safe", "eat", "spoiled", "smell", "mold", "bad"].some((word) =>
+      normalized.includes(word),
+    )
+  ) {
+    return "I cannot prove I am safe from a photo. Please check my package date, smell, and texture, and follow official guidance before eating me.";
+  }
+  if (
+    ["make", "cook", "recipe", "meal", "dinner", "lunch", "breakfast"].some(
+      (word) => normalized.includes(word),
+    )
+  ) {
+    return `Turn me into ${idea}. I would love to become tonight's rescue meal instead of being forgotten.`;
+  }
+  if (
+    ["when", "long", "soon", "expire", "fresh", "days"].some((word) =>
+      normalized.includes(word),
+    )
+  ) {
+    return `Plan to use me within ${state.estimatedDays} ${state.estimatedDays === 1 ? "day" : "days"}, before ${formatDate(state.estimatedDate)}. That is a planning estimate, so please check me before eating.`;
+  }
+  if (
+    ["store", "fridge", "freezer", "counter"].some((word) =>
+      normalized.includes(word),
+    )
+  ) {
+    return `You marked me as stored ${STORAGE_LABELS[els.storage.value]}. Keep me sealed, visible, and labeled so I do not disappear at the back.`;
+  }
+  if (
+    ["hello", "hi", "hey", "name", "who"].some((word) =>
+      normalized.includes(word),
+    )
+  ) {
+    return `I'm ${profile.spirit}, the spirit of this ${foodName}. ${profile.opening}`;
+  }
+  return "I'm listening. Ask me what meal I can become, how soon to use me, or how to keep me from being wasted.";
+}
+
+async function speakConversationReply(reply) {
+  const motionId = state.motion?.id ?? state.motion?.motion_id;
+  const motionTag = motionId ? ` [MOTION ${motionId}:1]` : "";
+  await els.presenter.resumeAudioPlayback?.();
+  await initializePresenter();
+  const result = await els.presenter.present(`${reply}${motionTag}`);
+  if (!result?.success) {
+    throw new Error(result?.message || result?.code || "Avatar speech failed.");
+  }
+}
+
+async function askFoodSpirit(rawQuestion) {
+  const question = rawQuestion.trim().slice(0, 240);
+  if (!question || state.isReplying) return;
+
+  const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
+  state.isReplying = true;
+  els.conversationInput.value = "";
+  els.conversationInput.disabled = true;
+  els.conversationSend.disabled = true;
+  els.voiceButton.disabled = true;
+  els.conversationStatus.textContent = `${profile.spirit} is thinking...`;
+  appendConversationMessage("user", question);
+
+  state.chatHistory.push({
+    role: "user",
+    parts: [{ type: "text", text: currentFoodContext(question) }],
+  });
+
+  let reply;
+  let usedFallback = false;
+  els.presenter.setThinking?.(true);
+  els.presenter.setListening?.(false);
+  try {
+    if (!state.chatbotId) throw new Error("Food Spirit chatbot is not configured.");
+    const signal = globalThis.AbortSignal?.timeout?.(18000);
+    const chatResponse = await request(`/api/chatbots/${state.chatbotId}/chat`, {
+      method: "POST",
+      body: { messages: state.chatHistory.slice(-12) },
+      ...(signal ? { signal } : {}),
+    });
+    if (chatResponse.status !== "succeeded" || !chatResponse.reply_text) {
+      throw new Error("Perxona chatbot did not return a reply.");
+    }
+    reply = String(chatResponse.reply_text).trim().slice(0, 600);
+  } catch {
+    reply = fallbackFoodReply(question);
+    usedFallback = true;
+  } finally {
+    els.presenter.setThinking?.(false);
+  }
+
+  state.chatHistory.push({
+    role: "assistant",
+    parts: [{ type: "text", text: reply }],
+  });
+  appendConversationMessage("spirit", reply);
+  els.speechLabel.textContent = `${profile.spirit} replies`;
+  els.speechText.textContent = reply;
+
+  try {
+    els.conversationStatus.textContent = usedFallback
+      ? "Perxona chat was busy; a safe local reply is speaking."
+      : `${profile.spirit} replied through Perxona and is speaking.`;
+    await speakConversationReply(reply);
+    els.presenterStatus.textContent = "Spirit replied";
+  } catch (error) {
+    els.conversationStatus.textContent = `The reply is ready as text. ${error.message}`;
+  } finally {
+    state.isReplying = false;
+    els.conversationInput.disabled = false;
+    els.conversationSend.disabled = false;
+    els.voiceButton.disabled = !state.recognition;
+    els.conversationInput.focus();
+  }
+}
+
+function setListeningState(isListening) {
+  state.isListening = isListening;
+  els.voiceButton.setAttribute("aria-pressed", String(isListening));
+  els.voiceButtonLabel.textContent = isListening ? "Listening" : "Talk";
+}
+
+function setupSpeechRecognition() {
+  const Recognition =
+    globalThis.SpeechRecognition ?? globalThis.webkitSpeechRecognition;
+  if (!Recognition) {
+    els.voiceButton.disabled = true;
+    els.conversationStatus.textContent =
+      "Voice input is unavailable in this browser. Text conversation still works.";
+    return;
+  }
+
+  const recognition = new Recognition();
+  recognition.lang = navigator.language || "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  state.recognition = recognition;
+
+  recognition.onstart = () => {
+    setListeningState(true);
+    els.presenter.setListening?.(true);
+    els.conversationStatus.textContent =
+      "Listening... ask your Food Spirit a question.";
+  };
+
+  recognition.onresult = (event) => {
+    let transcript = "";
+    let finalTranscript = "";
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      const text = event.results[index][0]?.transcript ?? "";
+      transcript += text;
+      if (event.results[index].isFinal) finalTranscript += text;
+    }
+    els.conversationInput.value = transcript.trim();
+    if (finalTranscript.trim()) {
+      recognition.stop();
+      void askFoodSpirit(finalTranscript);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    setListeningState(false);
+    els.presenter.setListening?.(false);
+    const permissionDenied = ["not-allowed", "service-not-allowed"].includes(
+      event.error,
+    );
+    els.conversationStatus.textContent = permissionDenied
+      ? "Microphone access was denied. You can still type your question."
+      : "I could not hear that. Tap Talk to try again, or use text.";
+  };
+
+  recognition.onend = () => {
+    setListeningState(false);
+    els.presenter.setListening?.(false);
+    if (!state.isReplying && !els.conversationInput.value.trim()) {
+      els.conversationStatus.textContent =
+        "Ask by text, or tap Talk and allow microphone access.";
+    }
+  };
 }
 
 function loadInventory() {
@@ -566,9 +840,11 @@ async function loadPhoto(file, statusMessage) {
   els.replacePhoto.hidden = false;
   els.analysisCard.hidden = true;
   els.speechCard.hidden = true;
+  resetConversation();
   els.analysisStatus.textContent = statusMessage;
   state.presenterInitialized = false;
   state.presenterReady = false;
+  state.presenterInitializationPromise = null;
   els.presenter.hidden = true;
   els.stagePlaceholder.hidden = false;
   els.presenterStatus.textContent = "Waiting to awaken this photo";
@@ -623,6 +899,30 @@ els.replayButton.addEventListener("click", async () => {
   }
 });
 els.saveButton.addEventListener("click", saveCurrentItem);
+els.conversationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void askFoodSpirit(els.conversationInput.value);
+});
+els.voiceButton.addEventListener("click", () => {
+  if (!state.recognition || state.isReplying) return;
+  if (state.isListening) {
+    state.recognition.stop();
+    return;
+  }
+  try {
+    state.recognition.start();
+  } catch {
+    els.conversationStatus.textContent =
+      "The microphone is already starting. Try again in a moment.";
+  }
+});
+els.promptButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const prompt = button.dataset.prompt ?? "";
+    els.conversationInput.value = prompt;
+    void askFoodSpirit(prompt);
+  });
+});
 
 els.presenter.addEventListener("PRESENTER_STATUS", (event) => {
   const status = event.detail?.status ?? event.detail;
@@ -650,6 +950,7 @@ els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
   }
 });
 
+setupSpeechRecognition();
 renderInventory();
 preparePerxona();
 window.addEventListener("load", () => {
