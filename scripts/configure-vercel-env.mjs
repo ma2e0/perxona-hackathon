@@ -6,9 +6,7 @@ const variableNames = [
   "PERXONA_CONNECT_EMAIL",
   "PERXONA_CONNECT_PASSWORD",
 ];
-// The first deployment is production because Preview branch variables require
-// a connected Git repository. Add Preview after GitHub is linked.
-const targets = ["production"];
+const targets = ["preview", "production"];
 const vercelCli = join(
   process.env.APPDATA,
   "npm",
@@ -27,7 +25,9 @@ for (const name of variableNames) {
 function addEnvironmentVariable(name, target) {
   return new Promise((resolve, reject) => {
     const targetArguments =
-      target === "preview" ? [name, target, "main"] : [name, target];
+      target === "preview"
+        ? [name, target, "codex/preview"]
+        : [name, target];
     const child = spawn(
       process.execPath,
       [
