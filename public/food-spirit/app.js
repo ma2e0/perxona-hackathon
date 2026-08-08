@@ -202,11 +202,11 @@ const els = {
   connectionLabel: document.querySelector("#connection-label"),
   navExperience: document.querySelector("#nav-experience"),
   welcomeScreen: document.querySelector("#welcome"),
-  welcomeStart: document.querySelector("#welcome-start"),
   welcomeSkip: document.querySelector("#welcome-skip"),
   welcomePresenter: document.querySelector("#welcome-presenter"),
   welcomePlaceholder: document.querySelector("#welcome-placeholder"),
   welcomeStatus: document.querySelector("#welcome-status"),
+  welcomeAudioNote: document.querySelector("#welcome-audio-note"),
   experiencePage: document.querySelector("#experience-page"),
   fileInput: document.querySelector("#food-photo"),
   uploadZone: document.querySelector("#upload-zone"),
@@ -278,6 +278,9 @@ const state = {
   welcomePresenterInitializationPromise: null,
   welcomeTransitionTimer: null,
   welcomeStarted: false,
+  welcomePlaybackPending: false,
+  welcomeNeedsGesture: false,
+  welcomeGestureCleanup: null,
   isRefreshingToken: false,
   performanceText: "",
   displayText: "",
@@ -430,7 +433,7 @@ async function preparePerxona() {
 
     els.connectionPill.dataset.state = "ready";
     els.connectionLabel.textContent = "Perxona ready";
-    void initializeWelcomePresenter().catch((error) => {
+    void attemptAutomaticWelcome().catch((error) => {
       els.welcomeStatus.textContent = error.message;
     });
   } catch (error) {
@@ -763,6 +766,7 @@ async function analyzePhoto() {
 
 function enterExperience() {
   if (!els.experiencePage.hidden) return;
+  disarmWelcomeGesture();
   window.clearTimeout(state.welcomeTransitionTimer);
   state.welcomeTransitionTimer = null;
   els.welcomePresenter.interruptPresentation?.();
@@ -823,25 +827,90 @@ async function initializeWelcomePresenter() {
   await state.welcomePresenterInitializationPromise;
 }
 
-async function playWelcome() {
-  if (state.welcomeStarted) return;
-  state.welcomeStarted = true;
-  els.welcomeStart.disabled = true;
-  els.welcomeStatus.textContent = "Airi is about to show you how Food Spirit works…";
+function disarmWelcomeGesture() {
+  state.welcomeGestureCleanup?.();
+  state.welcomeGestureCleanup = null;
+  state.welcomeNeedsGesture = false;
+}
+
+function armWelcomeGesture() {
+  if (state.welcomeNeedsGesture || state.welcomeStarted) return;
+  state.welcomeNeedsGesture = true;
+  els.welcomeStatus.textContent =
+    "Airi is ready. Her voice begins with your first interaction.";
+  els.welcomeAudioNote.textContent =
+    "Your browser paused autoplay. Tap anywhere on this welcome screen for sound.";
+
+  const handleInteraction = (event) => {
+    if (event.target.closest?.("#welcome-skip, #nav-experience")) return;
+    disarmWelcomeGesture();
+    void attemptAutomaticWelcome({ fromGesture: true });
+  };
+  document.addEventListener("pointerdown", handleInteraction, true);
+  document.addEventListener("keydown", handleInteraction, true);
+  state.welcomeGestureCleanup = () => {
+    document.removeEventListener("pointerdown", handleInteraction, true);
+    document.removeEventListener("keydown", handleInteraction, true);
+  };
+}
+
+function isAudioAutoplayBlocked(error) {
+  const message = String(error?.message ?? error ?? "").toLowerCase();
+  return ["audio", "autoplay", "context", "gesture", "playback", "200"].some(
+    (fragment) => message.includes(fragment),
+  );
+}
+
+async function attemptAutomaticWelcome({ fromGesture = false } = {}) {
+  if (
+    state.welcomeStarted ||
+    state.welcomePlaybackPending ||
+    !els.experiencePage.hidden ||
+    !els.welcomePresenter.isConnected
+  ) {
+    return;
+  }
+  state.welcomePlaybackPending = true;
+  els.welcomeStatus.textContent = fromGesture
+    ? "Starting Airi's welcome…"
+    : "Airi is loading and will welcome you automatically…";
   try {
-    await els.welcomePresenter.resumeAudioPlayback?.();
-    await initializeWelcomePresenter();
+    if (fromGesture) {
+      await els.welcomePresenter.resumeAudioPlayback?.();
+      await initializeWelcomePresenter();
+    } else {
+      await initializeWelcomePresenter();
+      await els.welcomePresenter.resumeAudioPlayback?.();
+    }
     const result = await els.welcomePresenter.present(WELCOME_SCRIPT);
     if (!result?.success) {
       throw new Error(result?.message || result?.code || "Welcome performance failed.");
     }
-    els.welcomeStatus.textContent = "Listen to Airi, then the camera experience will open.";
-    els.welcomeStart.querySelector("span").textContent = "✦";
-    els.welcomeStart.firstChild.textContent = " Welcome in progress ";
+    state.welcomeStarted = true;
+    disarmWelcomeGesture();
+    els.welcomeStatus.textContent = "Airi is welcoming you to Food Spirit.";
+    els.welcomeAudioNote.textContent =
+      "The photo experience opens automatically when she finishes.";
     state.welcomeTransitionTimer = window.setTimeout(enterExperience, 18000);
   } catch (error) {
-    els.welcomeStatus.textContent = `${error.message} Opening the experience instead.`;
-    window.setTimeout(enterExperience, 900);
+    if (!fromGesture && isAudioAutoplayBlocked(error)) {
+      armWelcomeGesture();
+      return;
+    }
+    if (String(error?.message ?? error).includes("taking too long")) {
+      console.warn("Airi is still loading after the initial wait period.");
+      els.welcomeStatus.textContent =
+        "Airi is still loading. You can wait or start with a photo.";
+      els.welcomeAudioNote.textContent =
+        "Her welcome will begin if the live avatar finishes loading.";
+      return;
+    }
+    console.error("Welcome presenter failed", error);
+    els.welcomeStatus.textContent = "Airi could not start her spoken welcome.";
+    els.welcomeAudioNote.textContent =
+      "You can continue immediately with Start with a photo.";
+  } finally {
+    state.welcomePlaybackPending = false;
   }
 }
 
@@ -1476,7 +1545,6 @@ els.foodName.addEventListener("input", () => {
 });
 els.navExperience.addEventListener("click", enterExperience);
 els.welcomeSkip.addEventListener("click", enterExperience);
-els.welcomeStart.addEventListener("click", playWelcome);
 els.awakenButton.addEventListener("click", awakenSpirit);
 els.replayButton.addEventListener("click", async () => {
   try {
@@ -1544,7 +1612,9 @@ els.welcomePresenter.addEventListener("PRESENTER_STATUS", (event) => {
   state.welcomePresenterInitialized = true;
   els.welcomePresenter.hidden = false;
   els.welcomePlaceholder.hidden = true;
-  els.welcomeStatus.textContent = "Airi is ready. Tap Hear the welcome to begin.";
+  els.welcomePresenter.updateCameraAngle?.("fullbody");
+  els.welcomeStatus.textContent = "Airi is ready. Starting her welcome…";
+  void attemptAutomaticWelcome();
 });
 
 els.welcomePresenter.addEventListener("ALL_PERFORMANCE_FINISHED", () => {

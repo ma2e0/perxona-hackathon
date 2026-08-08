@@ -56,60 +56,68 @@
           <h1 class="sr-only" id="landing-title">
             Food Spirit — your food has something to say
           </h1>
-          <div class="landing-art">
-            <img
-              src="./og.png"
-              alt="Food Spirit: a photographed avocado awakens as a joyful character"
-              fetchpriority="high"
-            />
-            <span class="landing-spark spark-one" aria-hidden="true"></span>
-            <span class="landing-spark spark-two" aria-hidden="true"></span>
-            <span class="landing-spark spark-three" aria-hidden="true"></span>
-            <span class="hackathon-badge">
-              <span aria-hidden="true"></span>
-              Perxona Tokyo Hackathon
-            </span>
+          <div class="landing-layout">
+            <article class="landing-story">
+              <div class="landing-art">
+                <img
+                  src="./og.png"
+                  alt="Food Spirit: a photographed avocado awakens as a joyful character"
+                  fetchpriority="high"
+                />
+                <span class="landing-spark spark-one" aria-hidden="true"></span>
+                <span class="landing-spark spark-two" aria-hidden="true"></span>
+                <span class="landing-spark spark-three" aria-hidden="true"></span>
+                <span class="hackathon-badge">
+                  <span aria-hidden="true"></span>
+                  Perxona Tokyo Hackathon
+                </span>
+              </div>
+              <div class="landing-actionbar">
+                <div>
+                  <p class="eyebrow">A living story for every ingredient</p>
+                  <h2>Photograph it. Awaken it. Rescue it.</h2>
+                  <p>
+                    Meet an expressive food companion that remembers when it
+                    should be used and talks through Perxona.
+                  </p>
+                </div>
+                <button class="landing-cta" id="welcome-skip" type="button">
+                  Start with a photo
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+              <div class="landing-steps" aria-label="How Food Spirit works">
+                <span><strong>01</strong> Take a photo</span>
+                <span><strong>02</strong> Meet its spirit</span>
+                <span><strong>03</strong> Talk and rescue</span>
+              </div>
+            </article>
 
-            <div class="welcome-avatar-card" aria-label="Welcome guide">
+            <aside class="welcome-avatar-card" aria-label="Welcome guide">
               <div class="welcome-avatar-topline">
                 <span><i aria-hidden="true"></i> Live welcome</span>
                 <strong>Female VRM 09</strong>
               </div>
               <div class="welcome-presenter-frame">
-                <sv-presenter id="welcome-presenter" hidden></sv-presenter>
+                <sv-presenter id="welcome-presenter"></sv-presenter>
                 <div class="welcome-placeholder" id="welcome-placeholder">
                   <span class="welcome-orbit" aria-hidden="true">✦</span>
                   <strong>Airi is getting ready</strong>
                 </div>
               </div>
-              <p id="welcome-status" role="status">
-                Your Food Spirit guide is preparing a short hello.
-              </p>
-            </div>
-          </div>
-          <div class="landing-actionbar">
-            <div>
-              <p class="eyebrow">A living story for every ingredient</p>
-              <h2>Photograph it. Awaken it. Rescue it.</h2>
-              <p>
-                Meet an expressive food companion that remembers when it should
-                be used and talks through Perxona.
-              </p>
-            </div>
-            <div class="landing-cta-group">
-              <button class="landing-cta" id="welcome-start" type="button">
-                Hear the welcome
-                <span aria-hidden="true">→</span>
-              </button>
-              <button class="landing-skip" id="welcome-skip" type="button">
-                Skip intro · take a photo
-              </button>
-            </div>
-          </div>
-          <div class="landing-steps" aria-label="How Food Spirit works">
-            <span><strong>01</strong> Take a photo</span>
-            <span><strong>02</strong> Meet its spirit</span>
-            <span><strong>03</strong> Talk and rescue</span>
+              <div class="welcome-status-panel">
+                <span class="auto-welcome-label">
+                  <i aria-hidden="true"></i>
+                  Automatic welcome
+                </span>
+                <p id="welcome-status" role="status">
+                  Your Food Spirit guide is preparing a short hello.
+                </p>
+                <small id="welcome-audio-note">
+                  Sound starts automatically when the browser allows it.
+                </small>
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -269,20 +277,15 @@
                     <span>● Live</span>
                   </div>
                   <div class="presenter-frame">
-                    <sv-presenter id="presenter" hidden></sv-presenter>
+                    <sv-presenter id="presenter"></sv-presenter>
                     <div class="stage-placeholder" id="stage-placeholder">
                       <div class="spirit-seed" aria-hidden="true">
                         <span>✦</span>
                       </div>
-                      <h2 class="placeholder-title">A voice is waiting inside.</h2>
-                      <p class="placeholder-copy">
-                        Your expressive avatar will appear here after recognition.
-                      </p>
+                      <strong class="sr-only" id="device-spirit-name">
+                        Your Food Spirit
+                      </strong>
                     </div>
-                  </div>
-                  <div class="device-caption">
-                    <span>Now meeting</span>
-                    <strong id="device-spirit-name">Your Food Spirit</strong>
                   </div>
                 </div>
                 <div class="device-homebar" aria-hidden="true"></div>

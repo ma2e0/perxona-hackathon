@@ -44,8 +44,10 @@ forgotten. The avatar is the behavioral interface, not a decorative result.
 
 ### 0:00–0:15 — Welcome and hook
 
-Tap **Hear the welcome**. Female VRM 09 briefly explains the three steps, then
-the separate camera experience opens.
+Female VRM 09 automatically begins a short welcome when browser audio policy
+allows it. If sound is paused, the first ordinary tap on the welcome screen
+starts her voice; there is no dedicated intro button. The separate camera
+experience opens when she finishes.
 
 “The first avatar is our guide. Every avatar after this belongs to food that
 might otherwise become invisible.”
