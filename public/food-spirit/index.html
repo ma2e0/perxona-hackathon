@@ -36,21 +36,67 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="/food-spirit/" aria-label="Food Spirit home">
+        <a class="brand" href="#welcome" aria-label="Food Spirit home">
           <span class="brand-mark" aria-hidden="true">芽</span>
           <span>Food Spirit</span>
         </a>
-        <div class="connection-pill" id="connection-pill" data-state="loading">
-          <span class="connection-dot" aria-hidden="true"></span>
-          <span id="connection-label">Connecting to Perxona</span>
+        <div class="topbar-actions">
+          <a class="nav-cta" href="#experience">Try the experience</a>
+          <div class="connection-pill" id="connection-pill" data-state="loading">
+            <span class="connection-dot" aria-hidden="true"></span>
+            <span id="connection-label">Connecting to Perxona</span>
+          </div>
         </div>
       </header>
 
       <main>
-        <section class="hero-grid" aria-labelledby="page-title">
+        <section class="landing-hero" id="welcome" aria-labelledby="landing-title">
+          <h1 class="sr-only" id="landing-title">
+            Food Spirit — your food has something to say
+          </h1>
+          <div class="landing-art">
+            <img
+              src="./og.png"
+              alt="Food Spirit: a photographed avocado awakens as a joyful character"
+              fetchpriority="high"
+            />
+            <span class="landing-spark spark-one" aria-hidden="true"></span>
+            <span class="landing-spark spark-two" aria-hidden="true"></span>
+            <span class="landing-spark spark-three" aria-hidden="true"></span>
+            <span class="hackathon-badge">
+              <span aria-hidden="true"></span>
+              Perxona Tokyo Hackathon
+            </span>
+          </div>
+          <div class="landing-actionbar">
+            <div>
+              <p class="eyebrow">A living story for every ingredient</p>
+              <h2>Photograph it. Awaken it. Rescue it.</h2>
+              <p>
+                Meet an expressive food companion that remembers when it should
+                be used and talks through Perxona.
+              </p>
+            </div>
+            <a class="landing-cta" href="#experience">
+              Awaken a Food Spirit
+              <span aria-hidden="true">↓</span>
+            </a>
+          </div>
+          <div class="landing-steps" aria-label="How Food Spirit works">
+            <span><strong>01</strong> Take a photo</span>
+            <span><strong>02</strong> Meet its spirit</span>
+            <span><strong>03</strong> Talk and rescue</span>
+          </div>
+        </section>
+
+        <section
+          class="hero-grid"
+          id="experience"
+          aria-labelledby="page-title"
+        >
           <article class="capture-panel">
-            <p class="eyebrow">Tokyo hackathon prototype</p>
-            <h1 id="page-title">Your food has something to say.</h1>
+            <p class="eyebrow">Live experience</p>
+            <h1 id="page-title">Meet the voice inside your kitchen.</h1>
             <p class="lede">
               Take a photo. Food Spirit identifies it on your device, estimates
               when to use it, and gives it a living voice through Perxona.
@@ -225,12 +271,15 @@
                     type="button"
                     aria-pressed="false"
                   >
-                    <span aria-hidden="true">🎙</span>
+                    <span class="voice-icon" aria-hidden="true">🎙</span>
+                    <span class="voice-wave" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
                     <span id="voice-button-label">Talk</span>
                   </button>
                 </form>
                 <p class="conversation-status" id="conversation-status" role="status">
-                  Ask by text, or tap Talk and allow microphone access.
+                  Type a question, or tap Talk, speak, then tap Done.
                 </p>
                 <p class="conversation-privacy">
                   Voice recognition uses your browser's speech service. The

@@ -24,7 +24,9 @@ The MVP now includes:
 - live Perxona avatar, scene, voice, emotion, and compatible motion selection
 - a first-person Food Spirit performance with replay
 - multi-turn text chat backed by a dedicated Perxona chatbot
-- push-to-talk browser speech recognition with automatic text fallback
+- tap-to-talk browser speech recognition: tap **Talk**, speak naturally, then
+  tap **Done** to send, with automatic recognition-session recovery and text fallback
+- an animated, responsive landing experience built around the Food Spirit artwork
 - a local, browser-only pantry inventory with compressed photo thumbnails
 - a clear food-safety disclaimer and explicit compost/share/freeze/use-soon guidance
 
@@ -92,10 +94,11 @@ Do not paste credential values into source files or expose them through public
 browser variables. The public demo uses one shared Perxona Connect identity, as
 intended by the official hackathon sample.
 
-Credential-backed API routes are automatically locked on Vercel production
-aliases. Preview deployments remain available for private hackathon judging.
-Set `PERXONA_PUBLIC_DEMO_ENABLED=true` only for a short, monitored public demo
-window after confirming the account's usage limits.
+Credential-backed API routes are locked on Vercel production aliases unless
+`PERXONA_PUBLIC_DEMO_ENABLED=true`. The hackathon deployment intentionally uses
+that flag so `https://food-spirit.vercel.app` can be judged without a long
+access-token URL. Keep the public window monitored because visitors share the
+demo account's Perxona quota; restore the flag to `false` after the event.
 
 ## Preparation notes
 

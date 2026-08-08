@@ -17,9 +17,14 @@ Food Spirit was implemented during the Perxona Tokyo Hackathon on August 8,
   audit passed before the first commit
 - Protected Vercel preview recognized the sample banana at 96%, produced the
   four-day estimate, and retained the saved pantry item after reload
-- Vercel production alias returns 503 for shared Perxona token issuance; the
-  revocable judge preview keeps the full integration enabled
+- The production alias can be opened as `food-spirit.vercel.app`; shared
+  Perxona token issuance is enabled only for the monitored hackathon window
 - Hosted Perxona presenter was aligned with the account's Asia API region
 - Dedicated Perxona chatbot returned a food-state-aware banana rescue answer
 - Text conversation, push-to-talk recognition, spoken avatar replies, and a
   deterministic timeout fallback were added to the Food Spirit stage
+- Push-to-talk now stays active across brief browser recognition pauses and
+  uses a deliberate **Talk → Done** interaction instead of sending the first
+  speech fragment immediately
+- Responsive desktop/mobile polish and an animated landing experience reuse the
+  high-resolution Food Spirit campaign artwork
