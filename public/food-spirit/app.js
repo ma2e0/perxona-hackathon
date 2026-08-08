@@ -226,6 +226,9 @@ const state = {
   isReplying: false,
   recognition: null,
   isListening: false,
+  keepListening: false,
+  voiceTranscript: "",
+  recognitionRestartTimer: null,
   inventory: loadInventory(),
 };
 
@@ -515,6 +518,7 @@ function appendConversationMessage(role, text) {
 }
 
 function resetConversation() {
+  stopVoiceSession({ submit: false, quiet: true });
   state.chatHistory = [];
   state.isReplying = false;
   els.conversationLog.replaceChildren();
@@ -523,7 +527,7 @@ function resetConversation() {
   els.conversationSend.disabled = false;
   els.voiceButton.disabled = !state.recognition;
   els.conversationStatus.textContent = state.recognition
-    ? "Ask by text, or tap Talk and allow microphone access."
+    ? "Type a question, or tap Talk, speak, then tap Done."
     : "Voice input is unavailable in this browser. Text conversation still works.";
 }
 
@@ -603,6 +607,10 @@ async function askFoodSpirit(rawQuestion) {
   const question = rawQuestion.trim().slice(0, 240);
   if (!question || state.isReplying) return;
 
+  if (state.keepListening) {
+    stopVoiceSession({ submit: false, quiet: true });
+  }
+
   const profile = FOOD_PROFILES[state.profileKey] ?? FOOD_PROFILES.food;
   state.isReplying = true;
   els.conversationInput.value = "";
@@ -667,8 +675,56 @@ async function askFoodSpirit(rawQuestion) {
 
 function setListeningState(isListening) {
   state.isListening = isListening;
-  els.voiceButton.setAttribute("aria-pressed", String(isListening));
-  els.voiceButtonLabel.textContent = isListening ? "Listening" : "Talk";
+  const voiceSessionActive = isListening || state.keepListening;
+  els.voiceButton.setAttribute("aria-pressed", String(voiceSessionActive));
+  els.voiceButtonLabel.textContent = voiceSessionActive ? "Done" : "Talk";
+}
+
+function clearRecognitionRestart() {
+  if (state.recognitionRestartTimer) {
+    clearTimeout(state.recognitionRestartTimer);
+    state.recognitionRestartTimer = null;
+  }
+}
+
+function stopVoiceSession({ submit = true, quiet = false } = {}) {
+  if (!state.recognition) return;
+
+  const transcript = els.conversationInput.value.trim();
+  state.keepListening = false;
+  clearRecognitionRestart();
+  try {
+    if (state.isListening) state.recognition.stop();
+  } catch {
+    // The browser may already be ending the speech service.
+  }
+  setListeningState(false);
+  els.presenter.setListening?.(false);
+
+  if (submit && transcript) {
+    els.conversationStatus.textContent = "Got it — preparing your Food Spirit's reply.";
+    void askFoodSpirit(transcript);
+  } else if (!quiet && submit) {
+    els.conversationStatus.textContent =
+      "I did not catch a question. Tap Talk and try again, or type it.";
+  }
+}
+
+function restartRecognition() {
+  clearRecognitionRestart();
+  state.recognitionRestartTimer = setTimeout(() => {
+    state.recognitionRestartTimer = null;
+    if (!state.keepListening || state.isReplying || !state.recognition) return;
+    try {
+      state.recognition.start();
+    } catch {
+      state.keepListening = false;
+      setListeningState(false);
+      els.presenter.setListening?.(false);
+      els.conversationStatus.textContent =
+        "The microphone could not restart. Tap Talk to try again.";
+    }
+  }, 280);
 }
 
 function setupSpeechRecognition() {
@@ -683,7 +739,7 @@ function setupSpeechRecognition() {
 
   const recognition = new Recognition();
   recognition.lang = navigator.language || "en-US";
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
   state.recognition = recognition;
@@ -692,41 +748,68 @@ function setupSpeechRecognition() {
     setListeningState(true);
     els.presenter.setListening?.(true);
     els.conversationStatus.textContent =
-      "Listening... ask your Food Spirit a question.";
+      "Listening… keep speaking, then tap Done to send.";
   };
 
   recognition.onresult = (event) => {
-    let transcript = "";
-    let finalTranscript = "";
+    let interimTranscript = "";
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const text = event.results[index][0]?.transcript ?? "";
-      transcript += text;
-      if (event.results[index].isFinal) finalTranscript += text;
+      if (event.results[index].isFinal) {
+        state.voiceTranscript = `${state.voiceTranscript} ${text}`.trim();
+      } else {
+        interimTranscript += text;
+      }
     }
-    els.conversationInput.value = transcript.trim();
-    if (finalTranscript.trim()) {
-      recognition.stop();
-      void askFoodSpirit(finalTranscript);
-    }
+    const heardText = `${state.voiceTranscript} ${interimTranscript}`.trim();
+    els.conversationInput.value = heardText;
+    els.conversationStatus.textContent = heardText
+      ? "I can hear you — keep speaking, then tap Done."
+      : "Listening… keep speaking, then tap Done to send.";
   };
 
   recognition.onerror = (event) => {
-    setListeningState(false);
-    els.presenter.setListening?.(false);
     const permissionDenied = ["not-allowed", "service-not-allowed"].includes(
       event.error,
     );
-    els.conversationStatus.textContent = permissionDenied
-      ? "Microphone access was denied. You can still type your question."
-      : "I could not hear that. Tap Talk to try again, or use text.";
+    if (permissionDenied) {
+      state.keepListening = false;
+      setListeningState(false);
+      els.presenter.setListening?.(false);
+      els.conversationStatus.textContent =
+        "Microphone access was denied. You can still type your question.";
+      return;
+    }
+
+    if (event.error === "no-speech" && state.keepListening) {
+      els.conversationStatus.textContent =
+        "Still listening… speak when ready, then tap Done.";
+      return;
+    }
+
+    if (event.error === "aborted" && !state.keepListening) return;
+
+    state.keepListening = false;
+    setListeningState(false);
+    els.presenter.setListening?.(false);
+    els.conversationStatus.textContent =
+      "The microphone paused. Tap Talk to try again, or use text.";
   };
 
   recognition.onend = () => {
     setListeningState(false);
+    if (state.keepListening && !state.isReplying) {
+      els.presenter.setListening?.(true);
+      els.conversationStatus.textContent =
+        "Still listening… speak when ready, then tap Done.";
+      restartRecognition();
+      return;
+    }
+
     els.presenter.setListening?.(false);
     if (!state.isReplying && !els.conversationInput.value.trim()) {
       els.conversationStatus.textContent =
-        "Ask by text, or tap Talk and allow microphone access.";
+        "Type a question, or tap Talk, speak, then tap Done.";
     }
   };
 }
@@ -905,13 +988,21 @@ els.conversationForm.addEventListener("submit", (event) => {
 });
 els.voiceButton.addEventListener("click", () => {
   if (!state.recognition || state.isReplying) return;
-  if (state.isListening) {
-    state.recognition.stop();
+  if (state.keepListening) {
+    stopVoiceSession({ submit: true });
     return;
   }
+
+  state.keepListening = true;
+  state.voiceTranscript = "";
+  els.conversationInput.value = "";
+  setListeningState(false);
+  els.conversationStatus.textContent = "Starting the microphone…";
   try {
     state.recognition.start();
   } catch {
+    state.keepListening = false;
+    setListeningState(false);
     els.conversationStatus.textContent =
       "The microphone is already starting. Try again in a moment.";
   }

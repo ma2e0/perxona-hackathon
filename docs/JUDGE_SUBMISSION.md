@@ -64,7 +64,7 @@ Select **Awaken this Food Spirit**.
 voice, facial expression, lip-sync, and motion. The reminder is no longer ‘item
 expires in four days’; it is a character asking not to be forgotten.”
 
-Tap **Talk** and ask: “What can I make with you tonight?”
+Tap **Talk**, ask “What can I make with you tonight?”, then tap **Done**.
 
 “The microphone becomes text, the Perxona chatbot receives the banana's current
 condition and use window, and the avatar performs its contextual answer. Typed
@@ -112,6 +112,5 @@ profiles while keeping one active presenter at a time for reliable performance.
 ## Links to provide in the submission form
 
 - Source: https://github.com/ma2e0/perxona-hackathon
-- Live demo: use the revocable Vercel judge link supplied separately; do not
-  publish its access token in this public repository
+- Live demo: https://food-spirit.vercel.app
 
