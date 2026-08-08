@@ -12,7 +12,7 @@ const PUBLIC_DEMO_EXPLICITLY_DISABLED =
   process.env.PERXONA_PUBLIC_DEMO_ENABLED === "false";
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
-  "https://cdn.perxona.ai/prod/latest/widget/entry/presenter.js";
+  "https://cdn.perxona.ai/asia/prod/latest/widget/entry/presenter.js";
 const DEMO_DEFAULTS = {
   avatarId: process.env.DEMO_DEFAULT_AVATAR_ID || "avatar-1",
   sceneId: process.env.DEMO_DEFAULT_SCENE_ID || "scene-1",
