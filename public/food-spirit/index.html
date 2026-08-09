@@ -23,14 +23,6 @@
     <meta name="twitter:image" content="/food-spirit/og.png" />
     <title>Food Spirit — Give your food a voice</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script
-      src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"
-      defer
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"
-      defer
-    ></script>
     <script type="module" src="./app.js"></script>
   </head>
   <body class="landing-open">
@@ -60,7 +52,7 @@
             <article class="landing-story">
               <div class="landing-art">
                 <img
-                  src="./og.png"
+                  src="./og-landing.webp"
                   alt="Food Spirit: a photographed avocado awakens as a joyful character"
                   fetchpriority="high"
                 />
@@ -263,12 +255,12 @@
               </div>
               <div class="inventory-grid" id="inventory-grid"></div>
               <p class="empty-inventory" id="empty-inventory">
-                Spirits are saved automatically after their first hello.
+                Spirits are saved automatically when awakened.
               </p>
             </section>
           </article>
 
-          <aside class="spirit-stage" aria-label="Food Spirit avatar stage">
+          <aside class="spirit-stage" id="spirit-stage" aria-label="Food Spirit avatar stage">
             <div class="stage-orb stage-orb-one"></div>
             <div class="stage-orb stage-orb-two"></div>
             <div class="stage-topline">
@@ -305,6 +297,9 @@
                         Your Food Spirit
                       </strong>
                     </div>
+                    <button class="presenter-retry" id="presenter-retry" type="button" hidden>
+                      Retry live avatar
+                    </button>
                   </div>
                 </div>
                 <div class="device-homebar" aria-hidden="true"></div>
@@ -342,7 +337,7 @@
                       </button>
                       <span class="auto-save-state" id="auto-save-state">
                         <i aria-hidden="true"></i>
-                        <span id="auto-save-label">Auto-saves after the first hello</span>
+                        <span id="auto-save-label">Saves automatically when awakened</span>
                       </span>
                     </div>
                   </div>
@@ -438,6 +433,21 @@
             </section>
           </aside>
           </section>
+
+          <nav class="mobile-mode-nav" id="mobile-mode-nav" aria-label="Food Spirit views">
+            <button id="mobile-scan-tab" type="button" data-view="scan" aria-current="page">
+              <span aria-hidden="true">◎</span>
+              <strong>Scan</strong>
+            </button>
+            <button id="mobile-spirit-tab" type="button" data-view="spirit" disabled>
+              <span aria-hidden="true">✦</span>
+              <strong>Spirit</strong>
+            </button>
+            <button id="mobile-pantry-tab" type="button" data-view="pantry">
+              <span aria-hidden="true">▣</span>
+              <strong>Pantry</strong>
+            </button>
+          </nav>
 
         </div>
       </main>

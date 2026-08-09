@@ -197,6 +197,11 @@ const PROFILE_AVATAR_CAST = {
 const WELCOME_SCRIPT =
   "Hi, welcome to Food Spirit. Take a photo of food, check what I discover, then tap Awaken. Your food will receive an expressive voice, a use-by plan, and a place in your living pantry. Let's meet the spirit in your kitchen.";
 
+const TFJS_URL =
+  "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js";
+const MOBILENET_URL =
+  "https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js";
+
 const els = {
   connectionPill: document.querySelector("#connection-pill"),
   connectionLabel: document.querySelector("#connection-label"),
@@ -238,6 +243,7 @@ const els = {
   fridgeFoodGrid: document.querySelector("#fridge-food-grid"),
   fridgeEmpty: document.querySelector("#fridge-empty"),
   stagePlaceholder: document.querySelector("#stage-placeholder"),
+  presenterRetry: document.querySelector("#presenter-retry"),
   deviceSpiritName: document.querySelector("#device-spirit-name"),
   speechCard: document.querySelector("#speech-card"),
   chatSheetHandle: document.querySelector("#chat-sheet-handle"),
@@ -259,6 +265,10 @@ const els = {
   inventoryGrid: document.querySelector("#inventory-grid"),
   inventoryCount: document.querySelector("#inventory-count"),
   emptyInventory: document.querySelector("#empty-inventory"),
+  mobileModeNav: document.querySelector("#mobile-mode-nav"),
+  mobileScanTab: document.querySelector("#mobile-scan-tab"),
+  mobileSpiritTab: document.querySelector("#mobile-spirit-tab"),
+  mobilePantryTab: document.querySelector("#mobile-pantry-tab"),
 };
 
 const state = {
@@ -304,6 +314,7 @@ const state = {
   pendingAutoSave: false,
   autoSaveTimer: null,
   chatSheetCollapsed: false,
+  mobileView: "scan",
   isReplying: false,
   recognition: null,
   isListening: false,
@@ -476,13 +487,15 @@ function profileForPredictions(predictions) {
 async function ensureRecognitionModel() {
   if (state.model) return state.model;
   if (state.modelPromise) return state.modelPromise;
-  if (!window.mobilenet) {
-    throw new Error("On-device recognition is still loading. Try again shortly.");
-  }
-  // The welcome screen gives us time to preload the full-width MobileNet V2.
-  // It has more capacity than the compact alpha 0.5 build while staying local.
-  state.modelPromise = window.mobilenet
-    .load({ version: 2, alpha: 1.0 })
+
+  // Load recognition only after the visitor enters the scan experience. This
+  // keeps the animated landing page fast, especially on mobile connections.
+  state.modelPromise = Promise.resolve()
+    .then(async () => {
+      if (!window.tf) await loadClassicScript(TFJS_URL);
+      if (!window.mobilenet) await loadClassicScript(MOBILENET_URL);
+      return window.mobilenet.load({ version: 2, alpha: 1.0 });
+    })
     .then((model) => {
       state.model = model;
       return model;
@@ -548,6 +561,70 @@ function createPerformance() {
 
 function isMobileChatSheet() {
   return globalThis.matchMedia?.("(max-width: 760px)").matches ?? false;
+}
+
+function loadClassicScript(url) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-food-spirit-library="${url}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") resolve();
+      else {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", reject, { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = url;
+    script.dataset.foodSpiritLibrary = url;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => reject(new Error("Recognition engine failed to load."));
+    document.head.append(script);
+  });
+}
+
+function setMobileView(view) {
+  if (!["scan", "spirit", "pantry"].includes(view)) return;
+  state.mobileView = view;
+  document.body.classList.remove(
+    "mobile-view-scan",
+    "mobile-view-spirit",
+    "mobile-view-pantry",
+  );
+  document.body.classList.add(`mobile-view-${view}`);
+
+  const tabs = {
+    scan: els.mobileScanTab,
+    spirit: els.mobileSpiritTab,
+    pantry: els.mobilePantryTab,
+  };
+  Object.entries(tabs).forEach(([key, button]) => {
+    button.setAttribute("aria-current", key === view ? "page" : "false");
+  });
+  els.mobileSpiritTab.disabled = !state.photoDataUrl;
+
+  if (view === "spirit") {
+    els.avatarFridge.hidden = true;
+    els.liveConsole.hidden = false;
+  } else if (view === "pantry") {
+    els.liveConsole.hidden = true;
+    els.avatarFridge.hidden = false;
+    renderAvatarFridge();
+  }
+
+  if (isMobileChatSheet()) {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+}
+
+function stopActiveSpirit() {
+  els.presenter.interruptPresentation?.();
+  els.presenter.setListening?.(false);
+  stopVoiceSession({ submit: false, quiet: true });
 }
 
 function setChatSheetCollapsed(collapsed) {
@@ -639,6 +716,7 @@ function applyRecognitionResult({ profileKey, confidence, foodName, source }) {
   els.aiRefinementPill.hidden = source !== "ai";
   els.analysisCard.hidden = false;
   els.awakenButton.disabled = false;
+  els.mobileSpiritTab.disabled = false;
   updateEstimate();
   createPerformance();
 }
@@ -811,9 +889,15 @@ function enterExperience() {
     els.experiencePage.hidden = false;
     document.body.classList.remove("landing-open");
     document.body.classList.add("experience-open");
+    setMobileView("scan");
     window.scrollTo({ top: 0, behavior: "auto" });
     els.welcomeScreen.classList.remove("is-leaving");
     els.fileInput.focus({ preventScroll: true });
+    window.setTimeout(() => {
+      ensureRecognitionModel().catch(() => {
+        // The user can still confirm the food label manually.
+      });
+    }, 700);
   }, 420);
 }
 
@@ -986,7 +1070,7 @@ function waitForPresenterReady(timeoutMs = 30000) {
       els.presenter.removeEventListener("PRESENTER_STATUS", handleStatus);
       reject(
         new Error(
-          "The avatar is taking too long to load. Please retry in Chrome.",
+          "The live avatar is taking longer than expected. Tap Retry.",
         ),
       );
     }, timeoutMs);
@@ -1020,7 +1104,7 @@ async function presentSpirit({ autoSave = false } = {}) {
     state.autoSaveTimer = window.setTimeout(completeAutoSave, 18000);
   }
   els.speechCard.hidden = false;
-  setChatSheetCollapsed(false);
+  setChatSheetCollapsed(isMobileChatSheet());
 }
 
 async function awakenSpirit() {
@@ -1028,18 +1112,28 @@ async function awakenSpirit() {
   els.presenterStatus.textContent = "Awakening…";
   createPerformance();
   els.speechCard.hidden = false;
-  setChatSheetCollapsed(false);
+  setChatSheetCollapsed(isMobileChatSheet());
+  els.presenterRetry.hidden = true;
+  els.avatarCloseButton.hidden = false;
+  setMobileView("spirit");
+
+  // Saving the useful food record must not depend on a live avatar connection.
+  saveCurrentItem();
+  els.autoSaveState.classList.remove("is-saving");
+  els.autoSaveState.classList.add("is-saved");
+  els.autoSaveLabel.textContent = "Saved automatically on this device";
   try {
     await els.presenter.resumeAudioPlayback?.();
     await initializePresenter();
-    await presentSpirit({ autoSave: true });
-    els.avatarCloseButton.hidden = false;
+    await presentSpirit();
   } catch (error) {
     state.pendingAutoSave = false;
     window.clearTimeout(state.autoSaveTimer);
     els.autoSaveState.classList.remove("is-saving");
-    els.autoSaveLabel.textContent = "Auto-saves after the first hello";
+    els.autoSaveState.classList.add("is-saved");
+    els.autoSaveLabel.textContent = "Saved automatically on this device";
     els.presenterStatus.textContent = error.message;
+    els.presenterRetry.hidden = false;
     els.awakenButton.disabled = false;
   }
 }
@@ -1471,9 +1565,6 @@ function renderAvatarFridge() {
 function restoreSavedSpirit(item) {
   // Restore the visible stage synchronously so the click always has feedback,
   // even if audio unlock or Perxona initialization later needs attention.
-  els.avatarFridge.hidden = true;
-  els.liveConsole.hidden = false;
-  els.avatarCloseButton.hidden = false;
   els.presenterStatus.textContent = `Reawakening ${item.spirit || item.food}...`;
 
   state.profileKey = item.profileKey || profileForText(item.food);
@@ -1490,14 +1581,13 @@ function restoreSavedSpirit(item) {
 }
 
 function closeAvatarStage() {
-  els.presenter.interruptPresentation?.();
-  els.presenter.setListening?.(false);
-  stopVoiceSession({ submit: false, quiet: true });
+  stopActiveSpirit();
   els.liveConsole.hidden = true;
   els.avatarFridge.hidden = false;
   els.avatarCloseButton.hidden = true;
   els.presenterStatus.textContent = "Choose a saved Food Spirit";
   renderAvatarFridge();
+  setMobileView("pantry");
 }
 
 function saveCurrentItem() {
@@ -1578,6 +1668,8 @@ async function loadPhoto(file, statusMessage) {
   state.isAnalyzing = false;
   state.captureId = crypto.randomUUID();
   state.selectedFileName = file.name || "";
+  state.photoDataUrl = "";
+  setMobileView("scan");
   els.avatarFridge.hidden = true;
   els.liveConsole.hidden = false;
   els.avatarCloseButton.hidden = true;
@@ -1585,7 +1677,7 @@ async function loadPhoto(file, statusMessage) {
   window.clearTimeout(state.autoSaveTimer);
   state.autoSaveTimer = null;
   els.autoSaveState.classList.remove("is-saving", "is-saved");
-  els.autoSaveLabel.textContent = "Auto-saves after the first hello";
+  els.autoSaveLabel.textContent = "Saves automatically when awakened";
   els.analyzeButton.hidden = true;
   els.aiRefinementPill.hidden = true;
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
@@ -1651,6 +1743,19 @@ els.navExperience.addEventListener("click", enterExperience);
 els.welcomeSkip.addEventListener("click", enterExperience);
 els.awakenButton.addEventListener("click", awakenSpirit);
 els.avatarCloseButton.addEventListener("click", closeAvatarStage);
+els.presenterRetry.addEventListener("click", awakenSpirit);
+els.mobileScanTab.addEventListener("click", () => {
+  stopActiveSpirit();
+  setMobileView("scan");
+});
+els.mobileSpiritTab.addEventListener("click", () => {
+  if (!state.photoDataUrl) return;
+  setMobileView("spirit");
+});
+els.mobilePantryTab.addEventListener("click", () => {
+  stopActiveSpirit();
+  setMobileView("pantry");
+});
 els.replayButton.addEventListener("click", async () => {
   try {
     await els.presenter.resumeAudioPlayback?.();
@@ -1700,6 +1805,7 @@ els.presenter.addEventListener("PRESENTER_STATUS", (event) => {
     state.presenterInitialized = true;
     els.presenter.hidden = false;
     els.stagePlaceholder.hidden = true;
+    els.presenterRetry.hidden = true;
     els.awakenButton.disabled = false;
   }
 });
@@ -1758,8 +1864,3 @@ setupSpeechRecognition();
 setupChatSheet();
 renderInventory();
 preparePerxona();
-window.addEventListener("load", () => {
-  ensureRecognitionModel().catch(() => {
-    // Recognition remains optional: the user can always identify food manually.
-  });
-});
