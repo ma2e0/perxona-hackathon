@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "test": "node --test security-boundary.test.mjs security-http.test.mjs",
     "build:storyboard": "node scripts/build-storyboard-download.mjs",
     "check": "node --check server.mjs && node --check public/food-spirit/app.js && node --check public/demos/basic/app.js && node --check public/demos/starter/app.js && node --check public/demos/external-llm/app.js && node --check public/demos/chatbot/app.js",
     "configure:vercel": "node --env-file=.env scripts/configure-vercel-env.mjs",
@@ -23,3 +24,4 @@
     "@perxona/presenter-types": "latest"
   }
 }
+

@@ -297,7 +297,6 @@ const state = {
   welcomePlaybackPending: false,
   welcomeNeedsGesture: false,
   welcomeGestureCleanup: null,
-  isRefreshingToken: false,
   performanceText: "",
   displayText: "",
   avatar: null,
@@ -928,9 +927,9 @@ async function initializeWelcomePresenter() {
   }
   if (!state.welcomePresenterInitializationPromise) {
     state.welcomePresenterInitializationPromise = (async () => {
-      const { connect_token: token } = await request("/api/connect-token");
+      const { connect_key: token } = await request("/api/connect-key");
       const ready = waitForWelcomePresenterReady();
-      await els.welcomePresenter.initialize(token, {
+      await els.welcomePresenter.initializeWithConnectKey(token, {
         avatarId: state.welcomeAvatar.id,
         sceneId: state.scene.id,
         voiceId: state.welcomeVoice.id,
@@ -1044,10 +1043,10 @@ async function initializePresenter() {
   }
   if (!state.presenterInitializationPromise) {
     state.presenterInitializationPromise = (async () => {
-      const { connect_token: token } = await request("/api/connect-token");
+      const { connect_key: token } = await request("/api/connect-key");
       state.presenterReady = false;
       const ready = waitForPresenterReady();
-      await els.presenter.initialize(token, {
+      await els.presenter.initializeWithConnectKey(token, {
         avatarId: state.avatar.id,
         sceneId: state.scene.id,
         voiceId: state.voice.id,
@@ -1837,30 +1836,16 @@ els.welcomePresenter.addEventListener("ALL_PERFORMANCE_FINISHED", () => {
     "Click Start with a photo when you are ready.";
 });
 
-els.presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
-  if (state.isRefreshingToken) return;
-  state.isRefreshingToken = true;
-  try {
-    const { connect_token: token } = await request("/api/connect-token");
-    els.presenter.refreshConnectToken(token);
-    els.presenterStatus.textContent = "Connection refreshed — try again";
-  } catch (error) {
-    els.presenterStatus.textContent = error.message;
-  } finally {
-    state.isRefreshingToken = false;
-  }
+els.presenter.addEventListener("CONNECT_KEY_REJECTED", () => {
+  els.presenterStatus.textContent = "Avatar connection unavailable. Please use the text conversation.";
 });
 
-els.welcomePresenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
-  try {
-    const { connect_token: token } = await request("/api/connect-token");
-    els.welcomePresenter.refreshConnectToken(token);
-  } catch (error) {
-    els.welcomeStatus.textContent = error.message;
-  }
+els.welcomePresenter.addEventListener("CONNECT_KEY_REJECTED", () => {
+  els.welcomeStatus.textContent = "Avatar connection unavailable. Continue with a photo.";
 });
 
 setupSpeechRecognition();
 setupChatSheet();
 renderInventory();
 preparePerxona();
+

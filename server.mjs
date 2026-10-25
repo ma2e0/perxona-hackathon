@@ -1,4 +1,5 @@
 import express from "express";
+import { createApiBoundary } from "./security-boundary.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,11 +14,6 @@ const STORYBOARD_DOWNLOAD_PATH = path.join(
 );
 const PERXONA_API_BASE_URL = process.env.PERXONA_API_BASE_URL;
 const USE_MOCK = process.env.USE_MOCK === "true";
-const IS_VERCEL_PRODUCTION = process.env.VERCEL_ENV === "production";
-const PUBLIC_DEMO_ENABLED =
-  process.env.PERXONA_PUBLIC_DEMO_ENABLED === "true";
-const PUBLIC_DEMO_EXPLICITLY_DISABLED =
-  process.env.PERXONA_PUBLIC_DEMO_ENABLED === "false";
 const PRESENTER_URL =
   process.env.PRESENTER_URL ||
   "https://cdn.perxona.ai/asia/prod/latest/widget/entry/presenter.js";
@@ -54,12 +50,12 @@ const fixedPresenterTarget = hasCompletePresenterTarget
 // Server-side credentials for the one shared Connect API identity this sample
 // uses — see README "Auth model". Every browser hitting this server acts
 // through the same upstream account; there is no per-user login.
-const CONNECT_EMAIL = process.env.PERXONA_CONNECT_EMAIL;
-const CONNECT_PASSWORD = process.env.PERXONA_CONNECT_PASSWORD;
+const CONNECT_SECRET_KEY = process.env.PERXONA_CONNECT_SECRET_KEY;
+const CONNECT_PUBLISHABLE_KEY = process.env.PERXONA_CONNECT_PUBLISHABLE_KEY;
 const FOOD_SPIRIT_CHATBOT_ID =
-  process.env.FOOD_SPIRIT_CHATBOT_ID || "01KZFTCA9W3A7NBJ31PS0Q7XPB";
+  process.env.FOOD_SPIRIT_CHATBOT_ID;
 const FOOD_VISION_REFINER_ID =
-  process.env.FOOD_VISION_REFINER_ID || "01KZFYDQWN5AJ1PYX8B7E9NWQQ";
+  process.env.FOOD_VISION_REFINER_ID;
 
 if (hasConfiguredPresenterTarget && !hasCompletePresenterTarget) {
   console.error(
@@ -79,11 +75,14 @@ if (!USE_MOCK) {
     process.exit(1);
   }
 
-  if (!CONNECT_EMAIL || !CONNECT_PASSWORD) {
+  if (!CONNECT_SECRET_KEY || !CONNECT_PUBLISHABLE_KEY || CONNECT_SECRET_KEY === CONNECT_PUBLISHABLE_KEY) {
     console.error(
-      "ERROR: PERXONA_CONNECT_EMAIL and PERXONA_CONNECT_PASSWORD are required.\n" +
-        "Copy .env.example to .env and fill them in with your Perxona service credentials.",
+      "ERROR: Separate secret and publishable Perxona Connect keys are required.",
     );
+    process.exit(1);
+  }
+  if (!FOOD_SPIRIT_CHATBOT_ID || !FOOD_VISION_REFINER_ID) {
+    console.error('ERROR: Both Food Spirit chatbot IDs must be configured explicitly.');
     process.exit(1);
   }
 }
@@ -94,11 +93,11 @@ if (!USE_MOCK) {
  * Send an authenticated request to the Perxona upstream API.
  * @param {string} path  - Upstream path, e.g. '/api/v1/connect/voices'
  * @param {object} opts  - fetch options (method, body, headers…)
- * @param {string} [token] - JWT access token; omit for unauthenticated calls
+ * @param {string} [token] - Server-only Connect secret key
  */
 async function callUpstream(path, opts, token) {
   const headers = { "Content-Type": "application/json", ...opts.headers };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers["X-Connect-Key"] = token;
   return fetch(`${PERXONA_API_BASE_URL}${path}`, { ...opts, headers });
 }
 
@@ -106,8 +105,7 @@ async function callUpstream(path, opts, token) {
  * Parse a callUpstream() Response as JSON, throwing a structured error
  * ({ status, payload }) on any non-2xx status. Centralising this means every
  * connectApi method — not just the ones that used to check r.ok by hand —
- * surfaces 401/403 the same way, which is what lets authedCall() (see below)
- * detect an expired bearer token and transparently re-login and retry.
+ * surfaces 401/403 consistently. Rejected keys are not refreshed or retried.
  * @param {Response} r
  * @param {string} label  Used in the thrown error message, e.g. "voices".
  */
@@ -129,11 +127,11 @@ async function upstreamJson(r, label) {
  * @param {string} path  - Upstream path, e.g. '/api/v1/connect/chatbots'
  * @param {"POST"|"PATCH"} method
  * @param {FormData} form
- * @param {string} [token] - JWT access token
+ * @param {string} [token] - Server-only Connect secret key
  */
 async function callUpstreamFormData(path, method, form, token) {
   const headers = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers["X-Connect-Key"] = token;
   return fetch(`${PERXONA_API_BASE_URL}${path}`, {
     method,
     headers,
@@ -170,14 +168,6 @@ const connectApi = {
     } catch {
       return "unreachable";
     }
-  },
-
-  async login(body) {
-    const r = await callUpstream("/api/v1/connect/auth/login", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    return upstreamJson(r, "login");
   },
 
   async voices(token) {
@@ -353,7 +343,7 @@ if (USE_MOCK) {
       "ERROR: USE_MOCK=true but mocks/upstream.mjs is not present.\n" +
         "The mock implementation is internal-only and is not included in this " +
         "public sample — set USE_MOCK=false (or remove it) and fill in real " +
-        "PERXONA_API_BASE_URL / PERXONA_CONNECT_EMAIL / PERXONA_CONNECT_PASSWORD instead.",
+        "PERXONA_API_BASE_URL and the dedicated Connect keys instead.",
     );
     process.exit(1);
   }
@@ -361,60 +351,9 @@ if (USE_MOCK) {
   api = connectApi;
 }
 
-// ── Global upstream auth (token manager) ────────────────────────────────────
-//
-// This sample exchanges ONE set of server-side credentials (PERXONA_CONNECT_EMAIL /
-// PERXONA_CONNECT_PASSWORD) for ONE Connect API bearer token, shared by every
-// browser that hits this server. There is no per-user login — see README "Auth
-// model" for the rationale and its tradeoffs.
-
-/** The current shared bearer token, or null before the first login. */
-let cachedToken = null;
-/** In-flight login request — de-dupes concurrent callers into one upstream login call. */
-let loginPromise = null;
-
-/**
- * Return the current bearer token, logging in with the configured Connect
- * credentials on first use (lazy — no login happens until the first protected
- * route is hit) or when forceRefresh is set (after upstream rejects the
- * cached token with 401/403). Concurrent callers share the same in-flight
- * login request instead of each triggering their own.
- * @param {{ forceRefresh?: boolean }} [opts]
- * @returns {Promise<string>}
- */
-async function getToken({ forceRefresh = false } = {}) {
-  if (cachedToken && !forceRefresh) return cachedToken;
-  if (forceRefresh) cachedToken = null;
-  if (!loginPromise) {
-    loginPromise = api
-      .login({ email: CONNECT_EMAIL, password: CONNECT_PASSWORD })
-      .then(({ access_token }) => {
-        cachedToken = access_token;
-        return cachedToken;
-      })
-      .finally(() => {
-        loginPromise = null;
-      });
-  }
-  return loginPromise;
-}
-
-/**
- * Run an upstream call with the shared token, transparently re-logging in and
- * retrying once if the token was rejected (401/403). This is what makes token
- * expiry invisible to the browser — no re-login UI or refresh token needed.
- * Any other error (network failure, 5xx, etc.) is rethrown as-is.
- * @param {(token: string) => Promise<any>} fn
- */
+// Only server-side upstream calls receive the secret Connect key.
 async function authedCall(fn) {
-  const token = await getToken();
-  try {
-    return await fn(token);
-  } catch (err) {
-    if (err.status !== 401 && err.status !== 403) throw err;
-    const freshToken = await getToken({ forceRefresh: true });
-    return fn(freshToken);
-  }
+  return fn(CONNECT_SECRET_KEY);
 }
 
 // ── Express app ────────────────────────────────────────────────────────────
@@ -447,26 +386,8 @@ app.use(express.static("public", { etag: !IS_DEV }));
 
 app.use(express.json());
 
-// A Vercel Git connection deploys the production branch automatically. Keep
-// credential-backed routes locked there until the owner explicitly enables the
-// public demo. Preview deployments remain fully functional for private judging.
-const PRODUCTION_API_ALLOWLIST = new Set(["/health", "/config"]);
-app.use("/api", (req, res, next) => {
-  if (
-    (!IS_VERCEL_PRODUCTION && !PUBLIC_DEMO_EXPLICITLY_DISABLED) ||
-    PUBLIC_DEMO_ENABLED ||
-    PRODUCTION_API_ALLOWLIST.has(req.path)
-  ) {
-    next();
-    return;
-  }
-
-  res.set("Cache-Control", "no-store");
-  res.status(503).json({
-    error:
-      "Shared Perxona sessions are disabled on the production alias. Use the hackathon preview deployment.",
-  });
-});
+// Hosted previews and production must never expose the shared service identity.
+app.use("/api", createApiBoundary());
 
 /**
  * Wrap a route handler so any thrown error (upstream failure, or auth retry
@@ -481,7 +402,7 @@ function route(handler) {
       await handler(req, res);
     } catch (err) {
       const status = err.status ?? 502;
-      res.status(status).json(err.payload ?? { error: String(err) });
+      res.status(status).json({ error: 'The service request failed. Please try again later.' });
     }
   };
 }
@@ -517,24 +438,12 @@ app.get("/api/config", (_req, res) => {
   });
 });
 
-// GET /api/connect-token
-// Returns: { connect_token } — the Connect Kit Bearer JWT the browser passes into
-//          presenter.initialize(connectToken, target). From there, <sv-presenter>
-//          talks to the Connect API directly to resolve the target, mint its own
-//          speech token, and refresh it — this server's only job is minting the
-//          token via its one shared login (see "Auth model" in README).
-//          The token is validated against the catalog first, so a cached token
-//          rejected with 401/403 is refreshed before it reaches the browser.
-// Errors:  502 upstream login failure.
+// Browser presentation gets only the dedicated, domain-restricted publishable key.
 app.get(
-  "/api/connect-token",
+  "/api/connect-key",
   route(async (_req, res) => {
     res.set({ "Cache-Control": "no-store", Pragma: "no-cache" });
-    const connectToken = await authedCall(async (token) => {
-      await api.voices(token);
-      return token;
-    });
-    res.json({ connect_token: connectToken });
+    res.json({ connect_key: CONNECT_PUBLISHABLE_KEY });
   }),
 );
 
@@ -545,7 +454,7 @@ app.get(
 // POST /api/chat             (disabled when LLM_API_KEY is unset → 501)
 //
 // All routes below share the one server-side Connect identity via authedCall();
-// there is no per-request auth check — see the token manager above.
+// the API boundary above rejects administrative and arbitrary-bot requests.
 
 // Catalog — read-only lists + single items used to populate UI dropdowns.
 //   GET /api/voices              → Page { items: [{ id, name, … }] }
@@ -1150,3 +1059,4 @@ app.listen(PORT, () => {
     console.log(`  CDN  : ${icon} ${status}  ${PRESENTER_URL}${hint}`);
   });
 });
+

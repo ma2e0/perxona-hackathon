@@ -3,8 +3,10 @@ import { join } from "node:path";
 
 const variableNames = [
   "PERXONA_API_BASE_URL",
-  "PERXONA_CONNECT_EMAIL",
-  "PERXONA_CONNECT_PASSWORD",
+  "PERXONA_CONNECT_SECRET_KEY",
+  "PERXONA_CONNECT_PUBLISHABLE_KEY",
+  "FOOD_SPIRIT_CHATBOT_ID",
+  "FOOD_VISION_REFINER_ID",
 ];
 const targets = ["preview", "production"];
 const vercelCli = join(
@@ -31,7 +33,7 @@ function addEnvironmentVariable(
   return new Promise((resolve, reject) => {
     const targetArguments =
       target === "preview"
-        ? [name, target, "codex/preview"]
+        ? [name, target]
         : [name, target];
     const child = spawn(
       process.execPath,
@@ -44,11 +46,10 @@ function addEnvironmentVariable(
         "--yes",
         "--force",
         "--no-color",
-        "--value",
-        value,
       ],
-      { cwd: process.cwd(), shell: false, stdio: ["ignore", "pipe", "pipe"] },
+      { cwd: process.cwd(), shell: false, stdio: ["pipe", "pipe", "pipe"] },
     );
+    child.stdin.end(value);
 
     let stdout = "";
     let stderr = "";
@@ -88,17 +89,5 @@ for (const target of targets) {
   }
 }
 
-await addEnvironmentVariable(
-  "PERXONA_PUBLIC_DEMO_ENABLED",
-  "preview",
-  "true",
-  { sensitive: false },
-);
-await addEnvironmentVariable(
-  "PERXONA_PUBLIC_DEMO_ENABLED",
-  "production",
-  "false",
-  { sensitive: false },
-);
-
 console.log("Vercel environment configuration complete.");
+
