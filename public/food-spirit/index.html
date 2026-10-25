@@ -91,7 +91,7 @@
                 <strong>Female VRM 09</strong>
               </div>
               <div class="welcome-presenter-frame">
-                <sv-presenter id="welcome-presenter"></sv-presenter>
+                <sv-presenter id="welcome-presenter" inlined></sv-presenter>
                 <div class="welcome-placeholder" id="welcome-placeholder">
                   <span class="welcome-orbit" aria-hidden="true">✦</span>
                   <strong>Airi is getting ready</strong>
@@ -108,6 +108,7 @@
                 <small id="welcome-audio-note">
                   Sound starts automatically when the browser allows it.
                 </small>
+                <button class="nav-cta" id="welcome-play" type="button">Play welcome</button>
               </div>
             </aside>
           </div>
@@ -288,7 +289,7 @@
                     <span>● Live</span>
                   </div>
                   <div class="presenter-frame">
-                    <sv-presenter id="presenter"></sv-presenter>
+                    <sv-presenter id="presenter" inlined></sv-presenter>
                     <div class="stage-placeholder" id="stage-placeholder">
                       <div class="spirit-seed" aria-hidden="true">
                         <span>✦</span>
@@ -459,3 +460,4 @@
     </div>
   </body>
 </html>
+

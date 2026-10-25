@@ -876,28 +876,11 @@ async function analyzePhoto() {
 
 function enterExperience() {
   if (!els.experiencePage.hidden) return;
-  disarmWelcomeGesture();
-  window.clearTimeout(state.welcomeTransitionTimer);
-  state.welcomeTransitionTimer = null;
-  els.welcomePresenter.interruptPresentation?.();
-  els.welcomeScreen.classList.add("is-leaving");
-
-  window.setTimeout(() => {
-    els.welcomePresenter.remove();
-    els.welcomeScreen.hidden = true;
-    els.experiencePage.hidden = false;
-    document.body.classList.remove("landing-open");
-    document.body.classList.add("experience-open");
-    setMobileView("scan");
-    window.scrollTo({ top: 0, behavior: "auto" });
-    els.welcomeScreen.classList.remove("is-leaving");
-    els.fileInput.focus({ preventScroll: true });
-    window.setTimeout(() => {
-      ensureRecognitionModel().catch(() => {
-        // The user can still confirm the food label manually.
-      });
-    }, 700);
-  }, 420);
+  // Inline Cocos owns one canvas per document. Start the food view in a fresh
+  // document instead of mounting two engines or moving a running custom element.
+  const destination = new URL(window.location.href);
+  destination.searchParams.set("view", "experience");
+  window.location.assign(destination.href);
 }
 
 function waitForWelcomePresenterReady(timeoutMs = 30000) {
@@ -1847,5 +1830,21 @@ els.welcomePresenter.addEventListener("CONNECT_KEY_REJECTED", () => {
 setupSpeechRecognition();
 setupChatSheet();
 renderInventory();
+if (new URLSearchParams(window.location.search).get("view") === "experience") {
+  els.welcomePresenter.remove();
+  els.welcomeScreen.hidden = true;
+  els.experiencePage.hidden = false;
+  document.body.classList.remove("landing-open");
+  document.body.classList.add("experience-open");
+  setMobileView("scan");
+} else {
+  els.presenter.remove();
+}
+document.querySelector("#welcome-play").addEventListener("click", () => {
+  // Unlock immediately in the click handler, including an autoplay attempt
+  // that is already waiting for the browser's audio permission.
+  Promise.resolve(els.welcomePresenter.resumeAudioPlayback?.()).catch(() => {});
+  void attemptAutomaticWelcome({ fromGesture: true });
+});
 preparePerxona();
 

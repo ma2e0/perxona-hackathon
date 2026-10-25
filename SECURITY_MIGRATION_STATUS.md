@@ -1,6 +1,6 @@
 # Local migration status
 
-26 October 2026. Production security migration deployed; visual acceptance pending.
+26 October 2026. Production security migration deployed; renderer repair verified visually.
 
 The owner requested preserving live avatar playback while removing administrative
 access and reusable account bearer-token exposure. The earlier hosted shutdown
@@ -40,7 +40,15 @@ Production evidence:
   not accepted and needs further browser/provider investigation.
 - Previous deployment: dpl_HJKn8nyytkyJqBXvEnhgzWG6PXKT, commit e69d9fc.
 
-Remaining: verify visual/audio playback, assess existing bearer-session expiry
+Renderer follow-up: owner confirmed the blank avatar in Chrome too. The default
+Cocos iframe stalled; the Three.js alternative reported Ready but stayed blank.
+Inline Cocos renders both Airi and EmojiBoy visibly. Only one presenter is mounted
+per document; the photo view uses ?view=experience to avoid competing inline engines.
+Play welcome provides an explicit audio-unlock gesture. The welcome performance
+completion event was observed; actual audible output remains owner confirmation.
+Screenshots are stored outside the repository in the CV workspace tmp directory.
+
+Remaining: owner audible-output confirmation, assess existing bearer-session expiry
 and unused dedicated keys without touching portfolio credentials. No existing
 credentials or tokens have been revoked. Preview secret is not configured;
 preview deployments intentionally cannot start without separate configuration.
